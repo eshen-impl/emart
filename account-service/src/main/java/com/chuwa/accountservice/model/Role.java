@@ -1,5 +1,6 @@
 package com.chuwa.accountservice.model;
 
+import com.chuwa.accountservice.model.enumtype.RoleType;
 import jakarta.persistence.*;
 
 @Entity

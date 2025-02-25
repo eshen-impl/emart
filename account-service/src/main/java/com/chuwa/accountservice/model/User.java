@@ -11,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,8 +21,9 @@ import java.util.Set;
 @Table(name = "users")
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(generator = "UUID")
+    @Column(updatable = false, nullable = false)
+    private UUID id;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -32,11 +34,11 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Embedded
-    private Address shippingAddress;
+    @OneToMany(mappedBy = "user")
+    private List<Address> shippingAddress;
 
-    @Embedded
-    private Address billingAddress;
+    @OneToMany(mappedBy = "user")
+    private List<Address> billingAddress;
 
     @OneToMany(mappedBy = "user")
     private List<PaymentMethod> paymentMethods;

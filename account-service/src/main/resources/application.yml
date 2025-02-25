@@ -9,10 +9,14 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
   mvc:
     log-resolved-exception: true
-  data:
-    jdbc:
-      dialect: mysql
+
 server:
   port: 8080
