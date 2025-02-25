@@ -1,0 +1,18 @@
+
+spring:
+  application:
+    name: account-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/emart?useSSL=false&serverTimezone=UTC
+    username: root
+    password: ying1234
+  jpa:
+    hibernate:
+      ddl-auto: update
+  mvc:
+    log-resolved-exception: true
+  data:
+    jdbc:
+      dialect: mysql
+server:
+  port: 8080
