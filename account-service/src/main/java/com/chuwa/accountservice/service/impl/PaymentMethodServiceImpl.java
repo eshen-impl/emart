@@ -5,7 +5,6 @@ import com.chuwa.accountservice.dao.UserRepository;
 import com.chuwa.accountservice.exception.ResourceNotFoundException;
 import com.chuwa.accountservice.model.PaymentMethod;
 import com.chuwa.accountservice.model.User;
-import com.chuwa.accountservice.model.compositekey.PaymentMethodId;
 import com.chuwa.accountservice.payload.PaymentMethodDTO;
 import com.chuwa.accountservice.service.PaymentMethodService;
 import org.springframework.stereotype.Service;
@@ -48,8 +47,13 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     @Override
     public PaymentMethodDTO updatePaymentMethod(UUID userId, PaymentMethodDTO paymentMethodDTO) {
-        PaymentMethod paymentMethod = paymentMethodRepository.findById(new PaymentMethodId(userId, paymentMethodDTO.getPaymentMethodId()))
+        User existingUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodIdAndUser(paymentMethodDTO.getPaymentMethodId(), existingUser)
                 .orElseThrow(() -> new ResourceNotFoundException("User payment method not found"));
+
+
         mapToPaymentMethod(paymentMethod, paymentMethodDTO);
         PaymentMethod savedPaymentMethod = paymentMethodRepository.save(paymentMethod);
         return convertToPaymentMethodDTO(savedPaymentMethod);
@@ -58,20 +62,20 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     @Override
     public void removePaymentMethod(UUID userId, Long paymentMethodId) {
-        paymentMethodRepository.deleteById(new PaymentMethodId(userId, paymentMethodId));
+        paymentMethodRepository.deleteById(paymentMethodId);
     }
 
 
     private void mapToPaymentMethod(PaymentMethod paymentMethod, PaymentMethodDTO paymentMethodDTO) {
         paymentMethod.setType(paymentMethodDTO.getType());
-        paymentMethod.setCardNumber(paymentMethod.getCardNumber());
+        paymentMethod.setCardNumber(paymentMethodDTO.getCardNumber());
         paymentMethod.setNameOnCard(paymentMethodDTO.getNameOnCard());
         paymentMethod.setExpirationDate(paymentMethodDTO.getExpirationDate());
     }
 
     private PaymentMethodDTO convertToPaymentMethodDTO(PaymentMethod paymentMethod) {
         return new PaymentMethodDTO(
-                paymentMethod.getId().getPaymentMethodId(),
+                paymentMethod.getPaymentMethodId(),
                 paymentMethod.getType(),
                 paymentMethod.getCardNumber(),
                 paymentMethod.getNameOnCard(),

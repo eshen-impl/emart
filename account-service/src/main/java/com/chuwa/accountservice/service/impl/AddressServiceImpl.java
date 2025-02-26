@@ -5,7 +5,6 @@ import com.chuwa.accountservice.dao.UserRepository;
 import com.chuwa.accountservice.exception.ResourceNotFoundException;
 import com.chuwa.accountservice.model.Address;
 import com.chuwa.accountservice.model.User;
-import com.chuwa.accountservice.model.compositekey.AddressId;
 import com.chuwa.accountservice.payload.AddressDTO;
 import com.chuwa.accountservice.service.AddressService;
 import org.springframework.stereotype.Service;
@@ -52,7 +51,10 @@ public class AddressServiceImpl implements AddressService {
     @Override
     public AddressDTO updateAddress(UUID userId, AddressDTO addressDTO) {
 
-        Address address = addressRepository.findById(new AddressId(userId, addressDTO.getAddressId()))
+        User existingUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Address address = addressRepository.findByAddressIdAndUser(addressDTO.getAddressId(), existingUser)
                 .orElseThrow(() -> new ResourceNotFoundException("User address not found"));
 
         mapToAddress(address, addressDTO);
@@ -63,7 +65,7 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public void removeAddress(UUID userId, Long addressId) {
-        addressRepository.deleteById(new AddressId(userId, addressId));
+        addressRepository.deleteById(addressId);
     }
 
     private void mapToAddress(Address address, AddressDTO addressDTO) {
@@ -78,7 +80,7 @@ public class AddressServiceImpl implements AddressService {
     private AddressDTO convertToAddressDTO(Address address) {
 
         return new AddressDTO(
-                address.getId().getAddressId(),
+                address.getAddressId(),
                 address.getStreet(),
                 address.getCity(),
                 address.getState(),

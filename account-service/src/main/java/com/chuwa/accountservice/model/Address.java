@@ -1,6 +1,5 @@
 package com.chuwa.accountservice.model;
 
-import com.chuwa.accountservice.model.compositekey.AddressId;
 import com.chuwa.accountservice.model.enumtype.AddressType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,10 +12,10 @@ import lombok.*;
 @Table(name = "addresses")
 public class Address {
 
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)  // For auto-generated sequential ID
-    @EmbeddedId
-    private AddressId id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long addressId;
 
     @Column(nullable = false)
     private String street;
@@ -34,7 +33,6 @@ public class Address {
     private boolean isDefault;
 
     @ManyToOne
-    @MapsId("userId") // Ensures userId in AddressId is also a Foreign Key
-    @JoinColumn(name = "user_id", nullable = false) // Defines actual column name in DB
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

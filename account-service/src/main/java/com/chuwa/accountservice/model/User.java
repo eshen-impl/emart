@@ -43,7 +43,7 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<PaymentMethod> paymentMethods;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),

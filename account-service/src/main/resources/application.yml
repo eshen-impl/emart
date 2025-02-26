@@ -3,13 +3,13 @@ spring:
   application:
     name: account-service
   datasource:
-    url: jdbc:mysql://localhost:3306/emart?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/emart_account?useSSL=false&serverTimezone=UTC
     username: root
     password: ying1234
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -20,3 +20,7 @@ spring:
 
 server:
   port: 8080
+
+#jwt:
+#  ttl: 3600000
+#  key: shen

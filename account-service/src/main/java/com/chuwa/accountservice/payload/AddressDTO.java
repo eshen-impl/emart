@@ -1,6 +1,7 @@
 package com.chuwa.accountservice.payload;
 
 import com.chuwa.accountservice.model.enumtype.AddressType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AddressDTO {
 
-    @NotBlank(message = "Address ID is required")
+
     private Long addressId;
     @NotBlank(message = "Street is required")
     private String street;
@@ -31,8 +32,10 @@ public class AddressDTO {
     @NotBlank(message = "Country is required")
     private String country;
 
-    @NotBlank(message = "Address type is required")
+
     private AddressType type;
+
+    @JsonProperty("isDefault")
     private boolean isDefault;
 
 }

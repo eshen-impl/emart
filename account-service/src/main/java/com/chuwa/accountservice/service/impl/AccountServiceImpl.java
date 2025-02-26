@@ -1,15 +1,15 @@
 package com.chuwa.accountservice.service.impl;
 
 import com.chuwa.accountservice.dao.UserRepository;
-import com.chuwa.accountservice.exception.DuplicateResourceException;
 import com.chuwa.accountservice.exception.ResourceNotFoundException;
 import com.chuwa.accountservice.model.User;
-import com.chuwa.accountservice.payload.RegisterUserDTO;
 import com.chuwa.accountservice.payload.UserInfoDTO;
 import com.chuwa.accountservice.service.AccountService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.UUID;
 
@@ -17,46 +17,39 @@ import java.util.UUID;
 public class AccountServiceImpl implements AccountService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public AccountServiceImpl(UserRepository userRepository) {
+    public AccountServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    @Override
-    public UserInfoDTO createAccount(RegisterUserDTO registerUserDTO) {
-        String email = registerUserDTO.getEmail();
-        if (userRepository.existsByEmail(email)) {
-            throw new DuplicateResourceException("User with email " + email + " already exists.");
-        }
-
-        User user = new User();
-        user.setEmail(email);
-        user.setUsername(registerUserDTO.getUsername());
-
-        //TODO: password encoder
-
-        User newUser = userRepository.save(user);
-        return convertToUserInfoDTO(newUser);
-    }
 
     @Override
     public UserInfoDTO updateUserInfo(UUID userId, UserInfoDTO userInfoDTO) {
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        existingUser.setEmail(userInfoDTO.getEmail());
-        existingUser.setUsername(userInfoDTO.getUsername());
+        if (StringUtils.hasText(userInfoDTO.getEmail())) {
+            existingUser.setEmail(userInfoDTO.getEmail());
+        }
+
+        if (StringUtils.hasText(userInfoDTO.getUsername())) {
+            existingUser.setUsername(userInfoDTO.getUsername());
+        }
 
         User updatedUser = userRepository.save(existingUser);
         return convertToUserInfoDTO(updatedUser);
     }
 
     @Override
-    public UserInfoDTO updateUserPassword(UUID userId, String password) {
+    public UserInfoDTO updateUserPassword(UUID userId, UserInfoDTO userInfoDTO) {
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        //TODO: password encoder
+        if (StringUtils.hasText(userInfoDTO.getPassword())) {
+            existingUser.setPassword(passwordEncoder.encode(userInfoDTO.getPassword()));
+        }
 
         User updatedUser = userRepository.save(existingUser);
         return convertToUserInfoDTO(updatedUser);

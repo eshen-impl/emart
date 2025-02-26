@@ -1,10 +1,15 @@
 package com.chuwa.accountservice.service;
 
-import com.chuwa.accountservice.payload.LoginUserDTO;
-import com.chuwa.accountservice.payload.RegisterUserDTO;
+import com.chuwa.accountservice.payload.SignInUserDTO;
+import com.chuwa.accountservice.payload.SignUpUserDTO;
+
+import java.util.Map;
+import java.util.UUID;
 
 public interface AuthService {
-    void registerUser(RegisterUserDTO registerUserDTO);
+    void signUp(SignUpUserDTO signUpUserDTO);
 
-    Object authenticateUser(LoginUserDTO loginUserDTO);
+    Map<String, String> signIn(SignInUserDTO signInUserDTO);
+
+    void signOut(UUID userId);
 }
