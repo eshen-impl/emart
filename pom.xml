@@ -20,6 +20,7 @@
     <module>order-service</module>
     <module>payment-service</module>
     <module>account-service</module>
+    <module>cart-service</module>
   </modules>
 
   <dependencyManagement>
@@ -27,10 +28,19 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>3.4.3</version>  <!-- Use latest stable version -->
+        <version>3.4.3</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>2024.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+
     </dependencies>
   </dependencyManagement>
   <dependencies>

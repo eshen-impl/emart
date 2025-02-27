@@ -39,6 +39,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                    .requestMatchers(HttpMethod.GET, "/api/v*/items/inventory").hasRole("ADMIN") //Restrict /inventory first
                     .requestMatchers(HttpMethod.GET, "/api/v*/items/**").permitAll() // Public endpoints
                     .anyRequest().authenticated() // Protect all other endpoints
                 )
