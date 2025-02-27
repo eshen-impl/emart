@@ -1,0 +1,15 @@
+
+spring:
+  application:
+    name: item-service
+
+
+  mvc:
+    log-resolved-exception: true
+
+server:
+  port: 8081
+
+#jwt:
+#  ttl: 3600000
+#  key: shen

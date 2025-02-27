@@ -1,17 +1,13 @@
-package com.chuwa.accountservice.service.impl;
+package com.chuwa.securitylib;
 
-import com.chuwa.accountservice.model.UserSession;
-import com.chuwa.accountservice.service.RedisUserSessionService;
-import com.chuwa.accountservice.util.RedisUtil;
+
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
-
 @Service
-public class RedisUserSessionServiceImpl implements RedisUserSessionService {
+public class RedisUserSessionService {
     private final RedisUtil redisUtil;
 
-    public RedisUserSessionServiceImpl(RedisUtil redisUtil) {
+    public RedisUserSessionService(RedisUtil redisUtil) {
         this.redisUtil = redisUtil;
     }
 

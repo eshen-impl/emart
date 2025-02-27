@@ -1,28 +1,32 @@
-package com.chuwa.accountservice.model;
+package com.chuwa.securitylib;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-
 import java.io.Serializable;
 import java.util.Set;
 
 
-@Getter
-@Service
-@AllArgsConstructor
-@NoArgsConstructor
-//@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserSession implements UserDetails, Serializable {
+    private static final long serialVersionUID = 1L;
     private String username; // UUID string format
-//    @JsonIgnore
+
     private Set<SimpleGrantedAuthority> authorities; //for authorization
 
+    public UserSession(String username, Set<SimpleGrantedAuthority> authorities) {
+        this.username = username;
+        this.authorities = authorities;
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public Set<SimpleGrantedAuthority> getAuthorities() {
+        return authorities;
+    }
 
     @Override
     public String getPassword() {

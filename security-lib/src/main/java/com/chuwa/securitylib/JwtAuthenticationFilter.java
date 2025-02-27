@@ -1,10 +1,6 @@
-package com.chuwa.accountservice.filter;
+package com.chuwa.securitylib;
 
-import com.chuwa.accountservice.model.UserSession;
-import com.chuwa.accountservice.service.RedisUserSessionService;
-import com.chuwa.accountservice.util.JwtUtil;
-import com.chuwa.accountservice.util.UUIDUtil;
-import io.jsonwebtoken.Claims;
+
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -35,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response); //not signed in: no jwt
             return;
         }
-
+//        System.out.println("Token found: " + token);
         try {
             JwtUtil.validateToken(token); //ExpiredJwtException | MalformedJwtException | SignatureException
         } catch (JwtException ex){
@@ -43,13 +39,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         String encodedUserId = JwtUtil.getUserIdFromToken(token);
-
+//        System.out.println("Valid token for user: " + encodedUserId);
         UserSession userSession = redisUserSessionService.getUserSession(encodedUserId);
         if (userSession == null) {
             filterChain.doFilter(request, response); //not signed in: session deleted
             return;
         }
-
+//        System.out.println("uuid: " + userSession.getUsername());
+//        System.out.println("authority: " + userSession.getAuthorities());
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                 new UsernamePasswordAuthenticationToken(userSession,null,userSession.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);

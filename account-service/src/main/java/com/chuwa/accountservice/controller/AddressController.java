@@ -1,12 +1,10 @@
 package com.chuwa.accountservice.controller;
 
-import com.chuwa.accountservice.model.UserSession;
 import com.chuwa.accountservice.payload.AddressDTO;
 import com.chuwa.accountservice.service.AddressService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;

@@ -1,4 +1,4 @@
-package com.chuwa.accountservice.util;
+package com.chuwa.securitylib;
 
 
 import org.springframework.data.redis.core.RedisTemplate;

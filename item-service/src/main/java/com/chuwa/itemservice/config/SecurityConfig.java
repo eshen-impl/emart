@@ -1,8 +1,8 @@
-package com.chuwa.accountservice.config;
+package com.chuwa.itemservice.config;
+
 import com.chuwa.securitylib.JwtAuthenticationFilter;
-//import com.chuwa.accountservice.filter.JwtAuthenticationFilter;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -38,8 +38,10 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/v*/auth/sign-in", "/api/v*/auth/sign-up").permitAll() // Public endpoints
-                    .requestMatchers("/api/v*/admin/**").hasRole("ADMIN") // Admin-only access
+                    .requestMatchers("/public/**").permitAll() // Public endpoints
+                    .requestMatchers("/admin/**").hasRole("ADMIN")
+//                    .requestMatchers("/api/v*/auth/sign-in", "/api/v*/auth/sign-up").permitAll() // Public endpoints
+//                    .requestMatchers("/api/v*/admin/**").hasRole("ADMIN") // Admin-only access
                     .anyRequest().authenticated() // Protect all other endpoints
                 )
                 .sessionManagement(session -> session
