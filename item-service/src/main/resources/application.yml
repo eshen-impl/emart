@@ -6,10 +6,9 @@ spring:
 
   mvc:
     log-resolved-exception: true
+  data:
+    mongodb:
+      uri: mongodb+srv://eshen-impl:2q9b81KeQcQTfF4Z@bot5500.rjdhhhq.mongodb.net/emart-item?retryWrites=true&w=majority&appName=Bot5500
 
 server:
   port: 8081
-
-#jwt:
-#  ttl: 3600000
-#  key: shen
