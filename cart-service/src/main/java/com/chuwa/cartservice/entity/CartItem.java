@@ -1,5 +1,6 @@
 package com.chuwa.cartservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +12,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Getter
 @Setter
+@JsonTypeName("CartItem")
 public class CartItem implements Serializable {
     private String itemId;
     private String itemName;

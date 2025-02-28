@@ -31,7 +31,7 @@ public class CartController {
         return ResponseEntity.ok("Item removed from cart");
     }
 
-    @GetMapping
+    @PostMapping("/list")
     public ResponseEntity<CartDTO> getCart(@RequestBody CartItemRequest request, HttpServletRequest httpRequest) {
         return ResponseEntity.ok(cartService.getCart(request, httpRequest));
     }
