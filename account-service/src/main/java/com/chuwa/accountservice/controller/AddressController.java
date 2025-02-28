@@ -2,6 +2,7 @@ package com.chuwa.accountservice.controller;
 
 import com.chuwa.accountservice.payload.AddressDTO;
 import com.chuwa.accountservice.service.AddressService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,8 @@ public class AddressController {
     }
 
     @PostMapping
+    @Operation(summary = "Add new address for the current user.",
+            description = "Required to be authenticated (have signed in).")
     public ResponseEntity<AddressDTO> addAddress(@Valid @RequestBody AddressDTO addressDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         AddressDTO createdAddress = addressService.addAddress(userId, addressDTO);
@@ -29,6 +32,8 @@ public class AddressController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all addresses for the current user.",
+            description = "Required to be authenticated (have signed in).")
     public ResponseEntity<List<AddressDTO>> getAddressesByUserId(Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         List<AddressDTO> addresses = addressService.getAddressesByUserId(userId);
@@ -36,6 +41,8 @@ public class AddressController {
     }
 
     @PutMapping
+    @Operation(summary = "Update current user's one specific address. Pass in addressId and new values in the request body.",
+            description = "Required to be authenticated (have signed in).")
     public ResponseEntity<AddressDTO> updateAddress(@Valid @RequestBody AddressDTO addressDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         AddressDTO updatedAddress = addressService.updateAddress(userId, addressDTO);
@@ -43,6 +50,8 @@ public class AddressController {
     }
 
     @DeleteMapping
+    @Operation(summary = "Delete current user's one specific address. Pass in addressId in the request body.",
+            description = "Required to be authenticated (have signed in).")
     public ResponseEntity<Void> removeAddress(@RequestBody AddressDTO addressDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         addressService.removeAddress(userId, addressDTO.getAddressId());

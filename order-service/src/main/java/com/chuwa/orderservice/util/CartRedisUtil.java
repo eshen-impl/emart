@@ -36,5 +36,8 @@ public class CartRedisUtil {
         return cartItems;
     }
 
+    public void clearCart(String cartKey) {
+        hashOperations.getOperations().delete(cartKey);
+    }
 
 }

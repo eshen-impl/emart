@@ -2,6 +2,7 @@ package com.chuwa.accountservice.controller;
 
 import com.chuwa.accountservice.payload.PaymentMethodDTO;
 import com.chuwa.accountservice.service.PaymentMethodService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,8 @@ public class PaymentMethodController {
     }
 
     @PostMapping
+    @Operation(summary = "Add new payment method for the current user.",
+            description = "Required to be authenticated (have signed in).")
     public ResponseEntity<PaymentMethodDTO> addPaymentMethod(@Valid @RequestBody PaymentMethodDTO paymentMethodDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         PaymentMethodDTO createdPaymentMethod = paymentMethodService.addPaymentMethod(userId, paymentMethodDTO);
@@ -30,6 +33,8 @@ public class PaymentMethodController {
 
 
     @GetMapping
+    @Operation(summary = "Get all payment methods for the current user.",
+            description = "Required to be authenticated (have signed in).")
     public ResponseEntity<List<PaymentMethodDTO>> getPaymentMethodsByUserId(Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         List<PaymentMethodDTO> paymentMethods = paymentMethodService.getPaymentMethodsByUserId(userId);
@@ -38,6 +43,8 @@ public class PaymentMethodController {
 
 
     @PutMapping
+    @Operation(summary = "Update current user's one specific payment method. Pass in paymentMethodId and new values in the request body.",
+            description = "Required to be authenticated (have signed in).")
     public ResponseEntity<PaymentMethodDTO> updatePaymentMethod(@Valid @RequestBody PaymentMethodDTO paymentMethodDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         PaymentMethodDTO updatedPaymentMethod = paymentMethodService.updatePaymentMethod(userId, paymentMethodDTO);
@@ -45,6 +52,8 @@ public class PaymentMethodController {
     }
 
     @DeleteMapping
+    @Operation(summary = "Delete current user's one specific address. Pass in paymentMethodId in the request body.",
+            description = "Required to be authenticated (have signed in).")
     public ResponseEntity<Void> removePaymentMethod(@RequestBody PaymentMethodDTO paymentMethodDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         paymentMethodService.removePaymentMethod(userId, paymentMethodDTO.getPaymentMethodId());

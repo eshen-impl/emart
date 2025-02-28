@@ -34,7 +34,9 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO createOrder(OrderDTO orderDTO) {
         UUID orderId = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
-        List<CartItem> items = cartRedisUtil.getCartItems("cart:"+ UUIDUtil.encodeUUID(orderDTO.getUserId()));
+        String cartKey = "cart:"+ UUIDUtil.encodeUUID(orderDTO.getUserId());
+        List<CartItem> items = cartRedisUtil.getCartItems(cartKey);
+        if (items.isEmpty()) throw new ResourceNotFoundException("Nothing in your cart yet. Please add something first!");
         String itemsJson = JsonUtil.toJson(items);
         double totalAmount = items.stream()
                 .mapToDouble(item -> item.getQuantity() * item.getUnitPrice())
@@ -54,6 +56,7 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
 
+        cartRedisUtil.clearCart(cartKey);
 //        paymentServiceClient.initiatePayment(order, order.getTotalAmount());
 //        orderRepository.save(order);
 
@@ -81,15 +84,15 @@ public class OrderServiceImpl implements OrderService {
 
 
 
-        if (order.getOrderStatus().equals(OrderStatus.PAID.toString())) {
+//        if (order.getOrderStatus().equals(OrderStatus.PAID.toString())) {
             order.setOrderStatus(OrderStatus.CANCELED.toString());
             order.setPaymentStatus(PaymentStatus.PENDING.toString());
 //            paymentServiceClient.initiateRefund(order, order.getTotalAmount());
             order.setUpdatedAt(LocalDateTime.now());
             orderRepository.save(order);
-        } else {
-            throw new RuntimeException("Order cannot be canceled");
-        }
+//        } else {
+//            throw new RuntimeException("Order cannot be canceled");
+//        }
 
 
         orderRepository.save(order);

@@ -26,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -48,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
     public void signUp(SignUpUserDTO signUpUserDTO) {
         String email = signUpUserDTO.getEmail();
         if (userRepository.existsByEmail(email)) {
-            throw new DuplicateResourceException("User with email " + email + " already exists.");
+            throw new DuplicateResourceException("User with email '" + email + "' already exists.");
         }
         User newUser = new User();
         newUser.setEmail(signUpUserDTO.getEmail());
@@ -89,6 +90,9 @@ public class AuthServiceImpl implements AuthService {
             HashMap<String, String> map = new HashMap<>();
             map.put("token", token);
             map.put("username", user.getUsername());
+            map.put("roles", user.getRoles().stream()
+                    .map(role -> role.getType().name())
+                    .collect(Collectors.joining(", ")));
             return map;
 
         } catch (BadCredentialsException e) {

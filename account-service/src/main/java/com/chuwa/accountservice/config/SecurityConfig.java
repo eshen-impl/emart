@@ -38,6 +38,12 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/swagger-ui/**",  // Allows Swagger UI assets
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",  //  Allows OpenAPI documentation
+                                "/webjars/**"       // Allows static assets
+                        ).permitAll()
                     .requestMatchers("/api/v*/auth/sign-in", "/api/v*/auth/sign-up").permitAll() // Public endpoints
                     .requestMatchers("/api/v*/admin/**").hasRole("ADMIN") // Admin-only access
                     .anyRequest().authenticated() // Protect all other endpoints

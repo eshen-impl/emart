@@ -69,6 +69,6 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private UserInfoDTO convertToUserInfoDTO(User user) {
-        return new UserInfoDTO(user.getEmail(), user.getUsername());
+        return new UserInfoDTO(user.getEmail(), user.getUsername(), user.getRoles());
     }
 }
