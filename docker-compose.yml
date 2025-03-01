@@ -1,0 +1,141 @@
+version: "3.8"
+
+services:
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - my-network
+
+  account-service:
+    build: ./account-service
+    container_name: account-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+#      - SPRING_DATASOURCE_URL=
+#      - SPRING_DATASOURCE_USERNAME=
+#      - SPRING_DATASOURCE_PASSWORD=
+    depends_on:
+      - redis
+    networks:
+      - my-network
+
+  item-service:
+    build: ./item-service
+    container_name: item-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+#      - SPRING_DATA_MONGODB_URI=mongodb+srv:
+    depends_on:
+      - eureka-server
+    networks:
+      - my-network
+
+  cart-service:
+    build: ./cart-service
+    container_name: cart-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+#      - SPRING_REDIS_HOST=redis
+#      - SPRING_REDIS_PORT=6379
+    depends_on:
+      - eureka-server
+      - redis
+    networks:
+      - my-network
+
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+#      - SPRING_CASSANDRA_CONTACT_POINTS=cassandra
+#      - SPRING_CASSANDRA_PORT=9042
+#      - SPRING_CASSANDRA_KEYSPACE=order_keyspace
+    depends_on:
+      - eureka-server
+      - cassandra
+#      - kafka
+    networks:
+      - my-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - my-network
+
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - ./docker-data/cassandra:/var/lib/cassandra
+    healthcheck:
+      test: [ "CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    environment:
+      - MAX_HEAP_SIZE=256M
+      - HEAP_NEWSIZE=128M
+      - CASSANDRA_CLUSTER_NAME=MyCluster
+    networks:
+      - my-network
+
+  cassandra-init:
+    image: cassandra:4.0
+    container_name: cassandra-init
+    depends_on:
+      - cassandra
+    volumes:
+      - ./init.cql:/init.cql
+    entrypoint: [ "sh", "-c", "sleep 30 && cqlsh cassandra -f /init.cql" ]
+
+
+#  zookeeper:
+#    image: confluentinc/cp-zookeeper:7.3.2
+#    environment:
+#      ZOOKEEPER_CLIENT_PORT: 2181
+#      ZOOKEEPER_TICK_TIME: 2000
+#    networks:
+#      - my-network
+#
+#  kafka:
+#    image: confluentinc/cp-kafka:7.3.2
+#    ports:
+#      - "9092:9092"
+#    depends_on:
+#      - zookeeper
+#    volumes:
+#      - ./docker-data/kafka:/var/lib/kafka/data
+#    environment:
+#      KAFKA_BROKER_ID: 1
+#      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kilo-doc-rest-kafka:29092
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#    networks:
+#      - my-network
+
+networks:
+  my-network:  # Create a custom network for all services
+    driver: bridge  # Use the bridge driver for local communication

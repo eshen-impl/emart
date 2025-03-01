@@ -3,8 +3,8 @@ spring:
   application:
     name: account-service
   datasource:
-    url: jdbc:mysql://localhost:3306/emart_account?useSSL=false&serverTimezone=UTC
-    username: root
+    url: jdbc:mysql://database-1.chs06sag2xwn.us-west-2.rds.amazonaws.com:3306/emart_account?useSSL=false&serverTimezone=UTC
+    username: admin
     password: ying1234
   jpa:
     hibernate:

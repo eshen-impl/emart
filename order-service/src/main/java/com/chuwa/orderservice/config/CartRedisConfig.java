@@ -12,13 +12,17 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 public class CartRedisConfig {
 
-    @Bean
-    public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory();
-    }
+//    @Bean
+//    public RedisConnectionFactory redisConnectionFactory() {
+//        return new LettuceConnectionFactory();
+//    }
+    private final RedisConnectionFactory redisConnectionFactory;
 
+    public CartRedisConfig(RedisConnectionFactory redisConnectionFactory) {
+        this.redisConnectionFactory = redisConnectionFactory;
+    }
     @Bean(name = "cartRedisTemplate")
-    public RedisTemplate<String, Object> cartRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+    public RedisTemplate<String, Object> cartRedisTemplate() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());

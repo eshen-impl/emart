@@ -6,6 +6,7 @@ import com.chuwa.orderservice.entity.*;
 import com.chuwa.orderservice.exception.ResourceNotFoundException;
 import com.chuwa.orderservice.payload.CartItem;
 import com.chuwa.orderservice.payload.OrderDTO;
+//import com.chuwa.orderservice.publisher.OrderEventPublisher;
 import com.chuwa.orderservice.service.OrderService;
 import com.chuwa.orderservice.util.CartRedisUtil;
 import com.chuwa.orderservice.util.JsonUtil;
@@ -13,6 +14,7 @@ import com.chuwa.orderservice.util.UUIDUtil;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+
+//    private final OrderEventPublisher orderEventPublisher;
     private final OrderRepository orderRepository;
     private final OrderByUserRepository orderByUserRepository;
     private final CartRedisUtil cartRedisUtil;
@@ -31,10 +35,10 @@ public class OrderServiceImpl implements OrderService {
         this.cartRedisUtil = cartRedisUtil;
     }
 
-    public OrderDTO createOrder(OrderDTO orderDTO) {
+    public OrderDTO createOrder(UUID userId) {
         UUID orderId = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
-        String cartKey = "cart:"+ UUIDUtil.encodeUUID(orderDTO.getUserId());
+        String cartKey = "cart:"+ UUIDUtil.encodeUUID(userId);
         List<CartItem> items = cartRedisUtil.getCartItems(cartKey);
         if (items.isEmpty()) throw new ResourceNotFoundException("Nothing in your cart yet. Please add something first!");
         String itemsJson = JsonUtil.toJson(items);
@@ -44,7 +48,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = new Order();
         order.setOrderId(orderId);
-        order.setUserId(orderDTO.getUserId());
+        order.setUserId(userId);
         order.setOrderStatus("Created");
         order.setTotalAmount(BigDecimal.valueOf(totalAmount));
         order.setCreatedAt(now);
@@ -55,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
-
+//        orderEventPublisher.sendOrderEvent(order); //to other microservices except payment
         cartRedisUtil.clearCart(cartKey);
 //        paymentServiceClient.initiatePayment(order, order.getTotalAmount());
 //        orderRepository.save(order);
@@ -73,7 +77,7 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
-
+//        orderEventPublisher.sendOrderEvent(order);
         return convertToDTO(order);
     }
 
@@ -89,7 +93,7 @@ public class OrderServiceImpl implements OrderService {
             order.setPaymentStatus(PaymentStatus.PENDING.toString());
 //            paymentServiceClient.initiateRefund(order, order.getTotalAmount());
             order.setUpdatedAt(LocalDateTime.now());
-            orderRepository.save(order);
+
 //        } else {
 //            throw new RuntimeException("Order cannot be canceled");
 //        }
@@ -97,7 +101,7 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
-
+//        orderEventPublisher.sendOrderEvent(order);
         return convertToDTO(order);
     }
 
