@@ -2,6 +2,9 @@
 # Created by https://www.gitignore.io/api/code,java,linux,macos,gradle,windows
 # Edit at https://www.gitignore.io/?templates=code,java,linux,macos,gradle,windows
 
+### Docker volume ###
+docker-data/
+
 ### Code ###
 .vscode/*
 /out/
