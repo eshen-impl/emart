@@ -8,14 +8,14 @@ spring:
     log-resolved-exception: true
   data:
     mongodb:
-      uri: mongodb+srv://eshen-impl:2q9b81KeQcQTfF4Z@bot5500.rjdhhhq.mongodb.net/emart-item?retryWrites=true&w=majority&appName=Bot5500
+      uri: ${SPRING_DATA_MONGODB_URI}
 
 server:
-  port: 8081
+  port: ${SERVER_PORT}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
   instance:
     prefer-ip-address: true

@@ -15,12 +15,13 @@ spring:
     template:
       default-topic: order-events   # Default topic for producer
   cassandra:
-    contact-points: cassandra
-#    contact-points: localhost
-    port: 9042
-    keyspace-name: emart_order
+    contact-points: ${SPRING_CASSANDRA_CONTACT_POINTS}
+    port: ${SPRING_CASSANDRA_PORT}
+    keyspace-name: ${SPRING_CASSANDRA_KEYSPACE}
     local-datacenter: datacenter1
-    schema-action: create_if_not_exists
+    schema-action: CREATE_IF_NOT_EXISTS
+  application:
+    name: order-service
 
 
 #order:
@@ -30,10 +31,9 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:8761/eureka/
-#      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
   instance:
     prefer-ip-address: true
 server:
-  port: 8083
+  port: ${SERVER_PORT}
 

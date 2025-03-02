@@ -1,10 +1,9 @@
 server:
-  port: 8761
+  port: ${SERVER_PORT}
 
 eureka:
   instance:
-    hostname: eureka-server
-#    hostname: localhost
+    hostname: ${EUREKA_INSTANCE_HOSTNAME}
 
   client:
     register-with-eureka: false
