@@ -26,6 +26,20 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<Map<String, String>> handleInsufficientStockException(InsufficientStockException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EmptyCartException.class)
+    public ResponseEntity<Map<String, String>> handleEmptyCartExceptionException(EmptyCartException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
 //    @ExceptionHandler(DuplicateResourceException.class)
 //    public ResponseEntity<Map<String, String>> handleDuplicateResourceException(DuplicateResourceException ex) {
 //        Map<String, String> response = new HashMap<>();

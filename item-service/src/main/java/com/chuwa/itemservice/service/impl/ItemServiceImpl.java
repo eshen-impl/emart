@@ -9,6 +9,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 @Service
 public class ItemServiceImpl implements ItemService {
@@ -54,6 +58,11 @@ public class ItemServiceImpl implements ItemService {
         Page<Item> items = itemRepository.findAll(pageable);
         return items.map(this::convertToDTO);
 
+    }
+
+    public Map<String, Integer> getAvailableUnits(List<String> itemIds) {
+        return itemRepository.findItemsByItemIdIn(itemIds).stream()
+                .collect(Collectors.toMap(Item::getItemId, Item::getAvailableUnits));
     }
 
     private void mapToItem(Item item, ItemDTO itemDTO) {

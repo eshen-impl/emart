@@ -22,7 +22,6 @@ public class CartRedisUtil {
     }
 
     public List<CartItem> getCartItems(String cartKey) {
-        // Retrieve the cart data as a map of String -> String (since value is stored as JSON string)
         Map<String, String> cartMap = hashOperations.entries(cartKey);
 
         List<CartItem> cartItems = new ArrayList<>();

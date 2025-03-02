@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/items")
 public class ItemController {
@@ -65,5 +68,13 @@ public class ItemController {
         Page<ItemDTO> itemDTOs = itemService.getAllItems(pageable);
         return new ResponseEntity<>(itemDTOs, HttpStatus.OK);
 
+    }
+
+    @PostMapping("/availability")
+    @Operation(summary = "Get available units for a list of item IDs",
+            description = "Returns a map where the key is the item ID and the value is the available stock for that item.")
+    public ResponseEntity<Map<String, Integer>> getAvailableUnits(@RequestBody List<String> itemIds) {
+        Map<String, Integer> availability = itemService.getAvailableUnits(itemIds);
+        return ResponseEntity.ok(availability);
     }
 }

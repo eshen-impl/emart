@@ -1,8 +1,11 @@
 package com.chuwa.orderservice.service.impl;
 
+import com.chuwa.orderservice.client.ItemClient;
 import com.chuwa.orderservice.dao.OrderByUserRepository;
 import com.chuwa.orderservice.dao.OrderRepository;
 import com.chuwa.orderservice.entity.*;
+import com.chuwa.orderservice.exception.EmptyCartException;
+import com.chuwa.orderservice.exception.InsufficientStockException;
 import com.chuwa.orderservice.exception.ResourceNotFoundException;
 import com.chuwa.orderservice.payload.CartItem;
 import com.chuwa.orderservice.payload.OrderDTO;
@@ -16,9 +19,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,11 +29,14 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderByUserRepository orderByUserRepository;
     private final CartRedisUtil cartRedisUtil;
+    private final ItemClient itemClient;
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderByUserRepository orderByUserRepository, CartRedisUtil cartRedisUtil) {
+
+    public OrderServiceImpl(OrderRepository orderRepository, OrderByUserRepository orderByUserRepository, CartRedisUtil cartRedisUtil, ItemClient itemClient) {
         this.orderRepository = orderRepository;
         this.orderByUserRepository = orderByUserRepository;
         this.cartRedisUtil = cartRedisUtil;
+        this.itemClient = itemClient;
     }
 
     public OrderDTO createOrder(UUID userId) {
@@ -40,7 +44,9 @@ public class OrderServiceImpl implements OrderService {
         LocalDateTime now = LocalDateTime.now();
         String cartKey = "cart:"+ UUIDUtil.encodeUUID(userId);
         List<CartItem> items = cartRedisUtil.getCartItems(cartKey);
-        if (items.isEmpty()) throw new ResourceNotFoundException("Nothing in your cart yet. Please add something first!");
+        if (items.isEmpty()) throw new EmptyCartException("Nothing in your cart yet. Please add something first!");
+        validateOrderItems(items); // check requested units of each item in cart not exceeding available units
+
         String itemsJson = JsonUtil.toJson(items);
         double totalAmount = items.stream()
                 .mapToDouble(item -> item.getQuantity() * item.getUnitPrice())
@@ -155,7 +161,27 @@ public class OrderServiceImpl implements OrderService {
     }
 
 
+    private void validateOrderItems(List<CartItem> orderItems) {
+        List<String> itemIds = orderItems.stream().map(CartItem::getItemId).collect(Collectors.toList());
 
+        Map<String, Integer> availableUnits = itemClient.getAvailableUnits(itemIds);
+
+        List<String> insufficientItems = new ArrayList<>();
+
+        for (CartItem item : orderItems) {
+            int requestedQty = item.getQuantity();
+            int availableQty = availableUnits.getOrDefault(item.getItemId(), 0);
+
+            if (requestedQty > availableQty) {
+                insufficientItems.add("Item: " + item.getItemId() + " (Requested: "
+                        + requestedQty + ", Available: " + availableQty + ")");
+            }
+        }
+
+        if (!insufficientItems.isEmpty()) {
+            throw new InsufficientStockException("Insufficient stock for the following items: " + String.join("; ", insufficientItems));
+        }
+    }
 
     private OrderDTO convertToDTO(Order order) {
         return new OrderDTO(order.getOrderId(), order.getUserId(), order.getOrderStatus(),

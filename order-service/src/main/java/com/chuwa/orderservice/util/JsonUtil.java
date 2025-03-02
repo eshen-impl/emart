@@ -18,7 +18,7 @@ public class JsonUtil {
         }
     }
 
-    public static List<CartItem> fromJson(String jsonString) {
+    public static List<CartItem> fromJsonToCartItemList(String jsonString) {
         try {
             return objectMapper.readValue(jsonString, new TypeReference<>() {
             });

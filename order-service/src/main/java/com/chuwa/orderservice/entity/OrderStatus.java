@@ -1,10 +1,6 @@
 package com.chuwa.orderservice.entity;
 
 public enum OrderStatus {
-    CREATED,
-    PAID,
-    FAILED,
-    CANCELED,
-    COMPLETED,
-    CANCELCOMPLETED
+    CREATED, CANCELED, UPDATED, SUSPENDED, SHIPPED, DELIVERED, REFUND_REQUESTED, REFUNDED
+
 }

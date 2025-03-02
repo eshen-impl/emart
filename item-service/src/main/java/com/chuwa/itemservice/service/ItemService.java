@@ -4,6 +4,9 @@ import com.chuwa.itemservice.payload.ItemDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+import java.util.Map;
+
 public interface ItemService {
     ItemDTO createItem(ItemDTO itemDTO);
 
@@ -12,5 +15,5 @@ public interface ItemService {
     void deleteItem(String id);
     Page<ItemDTO> getAllItems(Pageable pageable);
 
-
+    Map<String, Integer> getAvailableUnits(List<String> itemIds);
 }

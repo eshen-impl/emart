@@ -44,6 +44,13 @@ public class OrderByUser {
     @Column("payment_status")
     private String paymentStatus;
 
+    @Column("shipping_address")
+    private String shippingAddress;  // Full address in JSON
 
+    @Column("billing_address")
+    private String billingAddress;  // Full address in JSON
+
+    @Column("payment_method_id")
+    private String paymentMethodId; // Reference to Payment Service
 }
 

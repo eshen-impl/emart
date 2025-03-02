@@ -14,7 +14,10 @@ import java.util.UUID;
 
 import static org.springframework.data.cassandra.core.cql.PrimaryKeyType.PARTITIONED;
 
-
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table("orders")
 public class Order {
 
@@ -36,87 +39,19 @@ public class Order {
     private LocalDateTime updatedAt;
 
     @Column("items")
-    private String items;
+    private String items; //List of items in JSON
 
     @Column("payment_status")
     private String paymentStatus;
 
-    public Order(UUID orderId, UUID userId, String orderStatus, BigDecimal totalAmount, LocalDateTime createdAt, LocalDateTime updatedAt, String items, String paymentStatus) {
-        this.orderId = orderId;
-        this.userId = userId;
-        this.orderStatus = orderStatus;
-        this.totalAmount = totalAmount;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.items = items;
-        this.paymentStatus = paymentStatus;
-    }
+    @Column("shipping_address")
+    private String shippingAddress;  // Full address in JSON
 
-    public Order() {
+    @Column("billing_address")
+    private String billingAddress;  // Full address in JSON
 
-    }
+    @Column("payment_method_id")
+    private String paymentMethodId; // Reference to Payment Service
 
-    public UUID getOrderId() {
-        return orderId;
-    }
 
-    public void setOrderId(UUID orderId) {
-        this.orderId = orderId;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public String getOrderStatus() {
-        return orderStatus;
-    }
-
-    public void setOrderStatus(String orderStatus) {
-        this.orderStatus = orderStatus;
-    }
-
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getItems() {
-        return items;
-    }
-
-    public void setItems(String items) {
-        this.items = items;
-    }
-
-    public String getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public void setPaymentStatus(String paymentStatus) {
-        this.paymentStatus = paymentStatus;
-    }
 }
