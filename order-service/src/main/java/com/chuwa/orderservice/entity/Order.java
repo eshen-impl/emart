@@ -1,5 +1,7 @@
 package com.chuwa.orderservice.entity;
 
+import com.chuwa.orderservice.enums.OrderStatus;
+import com.chuwa.orderservice.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,8 +13,6 @@ import org.springframework.data.cassandra.core.mapping.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
-import static org.springframework.data.cassandra.core.cql.PrimaryKeyType.PARTITIONED;
 
 @Getter
 @Setter
@@ -27,7 +27,7 @@ public class Order {
     private UUID userId;
 
     @Column("order_status")
-    private String orderStatus;
+    private OrderStatus orderStatus;
 
     @Column("total_amount")
     private BigDecimal totalAmount;
@@ -42,16 +42,16 @@ public class Order {
     private String items; //List of items in JSON
 
     @Column("payment_status")
-    private String paymentStatus;
+    private PaymentStatus paymentStatus;
 
     @Column("shipping_address")
-    private String shippingAddress;  // Full address in JSON
+    private String shippingAddress;  // Full address snapshot in JSON
 
     @Column("billing_address")
-    private String billingAddress;  // Full address in JSON
+    private String billingAddress;  // Full address snapshot in JSON
 
-    @Column("payment_method_id")
-    private String paymentMethodId; // Reference to Payment Service
+    @Column("payment_method")
+    private String paymentMethod; // only necessary metadata snapshot from the payment method
 
 
 }

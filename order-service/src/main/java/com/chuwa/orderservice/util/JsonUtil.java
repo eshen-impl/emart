@@ -10,11 +10,11 @@ import java.util.List;
 public class JsonUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static String toJson(List<CartItem> items) {
+    public static String toJson(Object object) {
         try {
-            return objectMapper.writeValueAsString(items);
+            return objectMapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error serializing CartItem list to JSON", e);
+            throw new RuntimeException("Error serializing " + object.getClass() +" to JSON", e);
         }
     }
 

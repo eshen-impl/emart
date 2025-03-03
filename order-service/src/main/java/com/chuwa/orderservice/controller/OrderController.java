@@ -1,5 +1,6 @@
 package com.chuwa.orderservice.controller;
 
+import com.chuwa.orderservice.payload.CreateOrderRequestDTO;
 import com.chuwa.orderservice.payload.OrderDTO;
 import com.chuwa.orderservice.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,9 +25,9 @@ public class OrderController {
     @PostMapping("/create")
     @Operation(summary = "Submit a new order for all the added items in cart. ",
             description = "Return details of this order. " + "Required to be authenticated (have signed in) ")
-    public ResponseEntity<OrderDTO> createOrder(Principal principal) {
+    public ResponseEntity<OrderDTO> createOrder(@RequestBody CreateOrderRequestDTO createOrderRequestDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
-        return ResponseEntity.ok(orderService.createOrder(userId));
+        return ResponseEntity.ok(orderService.createOrder(userId, createOrderRequestDTO));
     }
 
     @PutMapping("/cancel/{orderId}")

@@ -2,6 +2,8 @@ package com.chuwa.accountservice.controller;
 
 
 import com.chuwa.accountservice.payload.UserInfoDTO;
+import com.chuwa.accountservice.payload.UserInfoRequestDTO;
+import com.chuwa.accountservice.payload.UserPasswordRequestDTO;
 import com.chuwa.accountservice.service.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -28,9 +30,9 @@ public class AccountController {
     @PutMapping("/info")
     @Operation(summary = "Update username and user email",
             description = "Required to be authenticated (have signed in).")
-    public ResponseEntity<UserInfoDTO> updateUserInfo(@Valid @RequestBody UserInfoDTO userInfoDTO, Principal principal) {
+    public ResponseEntity<UserInfoDTO> updateUserInfo(@Valid @RequestBody UserInfoRequestDTO userInfoRequestDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
-        UserInfoDTO updatedUserInfo = accountService.updateUserInfo(userId, userInfoDTO);
+        UserInfoDTO updatedUserInfo = accountService.updateUserInfo(userId, userInfoRequestDTO);
         return new ResponseEntity<>(updatedUserInfo, HttpStatus.OK);
     }
 
@@ -38,10 +40,12 @@ public class AccountController {
     @PutMapping("/password")
     @Operation(summary = "Update user account password",
             description = "Required to be authenticated (have signed in).")
-    public ResponseEntity<UserInfoDTO> updateUserPassword(@RequestBody UserInfoDTO userInfoDTO, Principal principal) {
+    public ResponseEntity<UserInfoDTO> updateUserPassword(@RequestBody UserPasswordRequestDTO userPasswordRequestDTO, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
-        UserInfoDTO updatedUserInfo = accountService.updateUserPassword(userId, userInfoDTO);
+        UserInfoDTO updatedUserInfo = accountService.updateUserPassword(userId, userPasswordRequestDTO);
         return new ResponseEntity<>(updatedUserInfo, HttpStatus.OK);
+        //frontend receive 200 code and prompt user to sign in with new password
+        //redirect /api/v1/auth/sign-out (having a button to sign in on the sign-out success page)
     }
 
     @GetMapping

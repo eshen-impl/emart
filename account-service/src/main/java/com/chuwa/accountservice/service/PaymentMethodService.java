@@ -10,4 +10,6 @@ public interface PaymentMethodService {
     List<PaymentMethodDTO> getPaymentMethodsByUserId(UUID userId);
     PaymentMethodDTO updatePaymentMethod(UUID userId, PaymentMethodDTO paymentMethodDTO);
     void removePaymentMethod(UUID userId, Long paymentMethodId);
+
+    PaymentMethodDTO getPaymentMethodByUserIdAndPaymentMethodId(UUID userId, Long paymentMethodId);
 }

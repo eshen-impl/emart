@@ -10,4 +10,7 @@ public interface AddressService {
     List<AddressDTO> getAddressesByUserId(UUID userId);
     AddressDTO updateAddress(UUID userId, AddressDTO addressDTO);
     void removeAddress(UUID userId, Long addressId);
+
+
+    AddressDTO getAddressByUserIdAndAddressId(UUID userId, Long addressId);
 }

@@ -1,9 +1,12 @@
 package com.chuwa.orderservice.payload;
 
+import com.chuwa.orderservice.enums.OrderStatus;
+import com.chuwa.orderservice.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.cassandra.core.mapping.Column;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,12 +20,15 @@ public class OrderDTO {
 
     private UUID orderId;
     private UUID userId;
-    private String orderStatus;
+    private OrderStatus orderStatus;
     private BigDecimal totalAmount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String items;  // JSON string
-    private String paymentStatus;
+    private String items;
+    private PaymentStatus paymentStatus;
+    private String shippingAddress;
+    private String billingAddress;
+    private String paymentMethod;
 
 
 }

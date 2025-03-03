@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -31,13 +32,22 @@ public class AddressController {
         return new ResponseEntity<>(createdAddress, HttpStatus.CREATED);
     }
 
-    @GetMapping
+    @GetMapping("/all")
     @Operation(summary = "Get all addresses for the current user.",
             description = "Required to be authenticated (have signed in).")
     public ResponseEntity<List<AddressDTO>> getAddressesByUserId(Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         List<AddressDTO> addresses = addressService.getAddressesByUserId(userId);
         return new ResponseEntity<>(addresses, HttpStatus.OK);
+    }
+
+    @GetMapping
+    @Operation(summary = "Get a specific address for the current user.",
+            description = "Required to be authenticated (have signed in).")
+    public ResponseEntity<AddressDTO> getAddressByUserIdAndAddressId(@RequestParam("addressId") Long addressId, Principal principal) {
+        UUID userId = UUID.fromString(principal.getName());
+        AddressDTO address = addressService.getAddressByUserIdAndAddressId(userId, addressId);
+        return new ResponseEntity<>(address, HttpStatus.OK);
     }
 
     @PutMapping
@@ -50,11 +60,11 @@ public class AddressController {
     }
 
     @DeleteMapping
-    @Operation(summary = "Delete current user's one specific address. Pass in addressId in the request body.",
+    @Operation(summary = "Delete current user's one specific address.",
             description = "Required to be authenticated (have signed in).")
-    public ResponseEntity<Void> removeAddress(@RequestBody AddressDTO addressDTO, Principal principal) {
+    public ResponseEntity<Void> removeAddress(@RequestParam("addressId") Long addressId, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
-        addressService.removeAddress(userId, addressDTO.getAddressId());
+        addressService.removeAddress(userId, addressId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 

@@ -1,4 +1,4 @@
-package com.chuwa.orderservice.enums;
+package com.chuwa.paymentservice.entity;
 
 
 

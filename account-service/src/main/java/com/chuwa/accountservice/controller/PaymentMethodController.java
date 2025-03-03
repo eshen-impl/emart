@@ -32,12 +32,21 @@ public class PaymentMethodController {
     }
 
 
-    @GetMapping
+    @GetMapping("/all")
     @Operation(summary = "Get all payment methods for the current user.",
             description = "Required to be authenticated (have signed in).")
     public ResponseEntity<List<PaymentMethodDTO>> getPaymentMethodsByUserId(Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
         List<PaymentMethodDTO> paymentMethods = paymentMethodService.getPaymentMethodsByUserId(userId);
+        return new ResponseEntity<>(paymentMethods, HttpStatus.OK);
+    }
+
+    @GetMapping
+    @Operation(summary = "Get a specific payment method for the current user.",
+            description = "Required to be authenticated (have signed in).")
+    public ResponseEntity<PaymentMethodDTO> getPaymentMethodByUserIdAndPaymentMethodId(@RequestParam("paymentMethodId") Long paymentMethodId, Principal principal) {
+        UUID userId = UUID.fromString(principal.getName());
+        PaymentMethodDTO paymentMethods = paymentMethodService.getPaymentMethodByUserIdAndPaymentMethodId(userId, paymentMethodId);
         return new ResponseEntity<>(paymentMethods, HttpStatus.OK);
     }
 
@@ -52,11 +61,11 @@ public class PaymentMethodController {
     }
 
     @DeleteMapping
-    @Operation(summary = "Delete current user's one specific address. Pass in paymentMethodId in the request body.",
+    @Operation(summary = "Delete current user's one specific address.",
             description = "Required to be authenticated (have signed in).")
-    public ResponseEntity<Void> removePaymentMethod(@RequestBody PaymentMethodDTO paymentMethodDTO, Principal principal) {
+    public ResponseEntity<Void> removePaymentMethod(@RequestParam("paymentMethodId") Long paymentMethodId, Principal principal) {
         UUID userId = UUID.fromString(principal.getName());
-        paymentMethodService.removePaymentMethod(userId, paymentMethodDTO.getPaymentMethodId());
+        paymentMethodService.removePaymentMethod(userId, paymentMethodId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

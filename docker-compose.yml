@@ -24,7 +24,9 @@ services:
       - SPRING_DATASOURCE_PASSWORD=ying1234
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     depends_on:
+      - eureka-server
       - redis
     networks:
       - my-network
@@ -86,6 +88,25 @@ services:
         condition: service_healthy
 #      kafka:
 #        condition: service_healthy
+    networks:
+      - my-network
+
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SERVER_PORT=8084
+      - SPRING_DATASOURCE_URL=jdbc:mysql://database-1.chs06sag2xwn.us-west-2.rds.amazonaws.com:3306/emart_account?useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=ying1234
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+      - redis
     networks:
       - my-network
 

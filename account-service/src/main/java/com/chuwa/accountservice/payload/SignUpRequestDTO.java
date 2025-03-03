@@ -13,7 +13,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SignUpUserDTO {
+public class SignUpRequestDTO {
     @NotBlank(message = "User email is required")
     @Email(message = "Invalid email format")
     private String email;

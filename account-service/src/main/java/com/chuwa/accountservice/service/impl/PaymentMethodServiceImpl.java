@@ -47,12 +47,9 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     @Override
     public PaymentMethodDTO updatePaymentMethod(UUID userId, PaymentMethodDTO paymentMethodDTO) {
-        User existingUser = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodIdAndUser(paymentMethodDTO.getPaymentMethodId(), existingUser)
+        PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodIdAndUserId(paymentMethodDTO.getPaymentMethodId(), userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User payment method not found"));
-
 
         mapToPaymentMethod(paymentMethod, paymentMethodDTO);
         PaymentMethod savedPaymentMethod = paymentMethodRepository.save(paymentMethod);
@@ -62,7 +59,15 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     @Override
     public void removePaymentMethod(UUID userId, Long paymentMethodId) {
-        paymentMethodRepository.deleteById(paymentMethodId);
+        paymentMethodRepository.deleteByPaymentMethodIdAndUserId(paymentMethodId, userId);
+    }
+
+    @Override
+    public PaymentMethodDTO getPaymentMethodByUserIdAndPaymentMethodId(UUID userId, Long paymentMethodId) {
+        PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodIdAndUserId(paymentMethodId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User payment method not found"));
+
+        return convertToPaymentMethodDTO(paymentMethod);
     }
 
 

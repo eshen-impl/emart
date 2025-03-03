@@ -13,20 +13,13 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
-
+@AllArgsConstructor
 public class UserInfoDTO {
 
     private String email;
 
     private String username;
 
-    private String password;
-
     private Set<Role> roles;
 
-    public UserInfoDTO(String email, String username, Set<Role> roles) {
-        this.email = email;
-        this.username = username;
-        this.roles = roles;
-    }
 }

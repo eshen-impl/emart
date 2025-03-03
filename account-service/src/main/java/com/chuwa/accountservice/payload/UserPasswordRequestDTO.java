@@ -1,7 +1,6 @@
 package com.chuwa.accountservice.payload;
 
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,10 +10,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SignInRequestDTO {
-    @NotBlank(message = "User email is required")
-    private String email;
+public class UserPasswordRequestDTO {
 
-    @NotBlank(message = "User password is required")
     private String password;
+
 }

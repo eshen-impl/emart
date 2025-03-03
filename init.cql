@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS orders (
                                       created_at TIMESTAMP,
                                       updated_at TIMESTAMP,
                                       items TEXT,
-                                      payment_status TEXT
+                                      payment_status TEXT,
+                                      shipping_address TEXT,
+                                      billing_address TEXT,
+                                      payment_method TEXT
 );
 
 CREATE TABLE IF NOT EXISTS orders_by_user (
@@ -22,5 +25,8 @@ CREATE TABLE IF NOT EXISTS orders_by_user (
                                               updated_at TIMESTAMP,
                                               items TEXT,
                                               payment_status TEXT,
+                                              shipping_address TEXT,
+                                              billing_address TEXT,
+                                              payment_method TEXT,
                                               PRIMARY KEY (user_id, created_at)
 ) WITH CLUSTERING ORDER BY (created_at DESC);

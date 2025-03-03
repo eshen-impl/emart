@@ -4,6 +4,8 @@ import com.chuwa.accountservice.dao.UserRepository;
 import com.chuwa.accountservice.exception.ResourceNotFoundException;
 import com.chuwa.accountservice.model.User;
 import com.chuwa.accountservice.payload.UserInfoDTO;
+import com.chuwa.accountservice.payload.UserInfoRequestDTO;
+import com.chuwa.accountservice.payload.UserPasswordRequestDTO;
 import com.chuwa.accountservice.service.AccountService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,16 +28,16 @@ public class AccountServiceImpl implements AccountService {
 
 
     @Override
-    public UserInfoDTO updateUserInfo(UUID userId, UserInfoDTO userInfoDTO) {
+    public UserInfoDTO updateUserInfo(UUID userId, UserInfoRequestDTO userInfoRequestDTO) {
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (StringUtils.hasText(userInfoDTO.getEmail())) {
-            existingUser.setEmail(userInfoDTO.getEmail());
+        if (StringUtils.hasText(userInfoRequestDTO.getEmail())) {
+            existingUser.setEmail(userInfoRequestDTO.getEmail());
         }
 
-        if (StringUtils.hasText(userInfoDTO.getUsername())) {
-            existingUser.setUsername(userInfoDTO.getUsername());
+        if (StringUtils.hasText(userInfoRequestDTO.getUsername())) {
+            existingUser.setUsername(userInfoRequestDTO.getUsername());
         }
 
         User updatedUser = userRepository.save(existingUser);
@@ -43,12 +45,12 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public UserInfoDTO updateUserPassword(UUID userId, UserInfoDTO userInfoDTO) {
+    public UserInfoDTO updateUserPassword(UUID userId, UserPasswordRequestDTO userPasswordRequestDTO) {
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (StringUtils.hasText(userInfoDTO.getPassword())) {
-            existingUser.setPassword(passwordEncoder.encode(userInfoDTO.getPassword()));
+        if (StringUtils.hasText(userPasswordRequestDTO.getPassword())) {
+            existingUser.setPassword(passwordEncoder.encode(userPasswordRequestDTO.getPassword()));
         }
 
         User updatedUser = userRepository.save(existingUser);

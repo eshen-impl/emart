@@ -1,5 +1,7 @@
 package com.chuwa.orderservice.entity;
 
+import com.chuwa.orderservice.enums.OrderStatus;
+import com.chuwa.orderservice.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,7 +33,7 @@ public class OrderByUser {
     @Column("order_id")
     private UUID orderId;
     @Column("order_status")
-    private String orderStatus;
+    private OrderStatus orderStatus;
 
     @Column("total_amount")
     private BigDecimal totalAmount;
@@ -42,15 +44,15 @@ public class OrderByUser {
     private String items;
 
     @Column("payment_status")
-    private String paymentStatus;
+    private PaymentStatus paymentStatus;
 
     @Column("shipping_address")
-    private String shippingAddress;  // Full address in JSON
+    private String shippingAddress;  // Full address snapshot in JSON
 
     @Column("billing_address")
-    private String billingAddress;  // Full address in JSON
+    private String billingAddress;  // Full address snapshot in JSON
 
-    @Column("payment_method_id")
-    private String paymentMethodId; // Reference to Payment Service
+    @Column("payment_method")
+    private String paymentMethod; // only necessary metadata snapshot from the payment method
 }
 

@@ -9,8 +9,8 @@ import com.chuwa.accountservice.model.User;
 import com.chuwa.securitylib.UserSession;
 //import com.chuwa.accountservice.model.UserSession;
 import com.chuwa.accountservice.model.enumtype.RoleType;
-import com.chuwa.accountservice.payload.SignInUserDTO;
-import com.chuwa.accountservice.payload.SignUpUserDTO;
+import com.chuwa.accountservice.payload.SignInRequestDTO;
+import com.chuwa.accountservice.payload.SignUpRequestDTO;
 import com.chuwa.accountservice.service.AuthService;
 import com.chuwa.securitylib.RedisUserSessionService;
 //import com.chuwa.accountservice.service.RedisUserSessionService;
@@ -46,22 +46,22 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void signUp(SignUpUserDTO signUpUserDTO) {
-        String email = signUpUserDTO.getEmail();
+    public void signUp(SignUpRequestDTO signUpRequestDTO) {
+        String email = signUpRequestDTO.getEmail();
         if (userRepository.existsByEmail(email)) {
             throw new DuplicateResourceException("User with email '" + email + "' already exists.");
         }
         User newUser = new User();
-        newUser.setEmail(signUpUserDTO.getEmail());
-        newUser.setUsername(signUpUserDTO.getUsername());
-        newUser.setPassword(passwordEncoder.encode(signUpUserDTO.getPassword()));
+        newUser.setEmail(signUpRequestDTO.getEmail());
+        newUser.setUsername(signUpRequestDTO.getUsername());
+        newUser.setPassword(passwordEncoder.encode(signUpRequestDTO.getPassword()));
 
         Set<Role> roles = new HashSet<>();
-        if (signUpUserDTO.getRoles() == null || signUpUserDTO.getRoles().isEmpty()) {
+        if (signUpRequestDTO.getRoles() == null || signUpRequestDTO.getRoles().isEmpty()) {
             roles.add(roleRepository.findByType(RoleType.ROLE_CUSTOMER)
                     .orElseThrow(() -> new RuntimeException("Default role not found.")));
         } else {
-            for (String role : signUpUserDTO.getRoles()) {
+            for (String role : signUpRequestDTO.getRoles()) {
                 RoleType userRole = RoleType.valueOf(role);
                 roles.add(roleRepository.findByType(userRole)
                         .orElseThrow(() -> new RuntimeException("Role not found: " + role)));
@@ -74,11 +74,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Map<String, String> signIn(SignInUserDTO signInUserDTO) {
+    public Map<String, String> signIn(SignInRequestDTO signInRequestDTO) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            signInUserDTO.getEmail(), signInUserDTO.getPassword())
+                            signInRequestDTO.getEmail(), signInRequestDTO.getPassword())
             );
             CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
             User user = customUserDetails.getUser();

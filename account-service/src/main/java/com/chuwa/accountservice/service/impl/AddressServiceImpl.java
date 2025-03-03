@@ -51,10 +51,7 @@ public class AddressServiceImpl implements AddressService {
     @Override
     public AddressDTO updateAddress(UUID userId, AddressDTO addressDTO) {
 
-        User existingUser = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        Address address = addressRepository.findByAddressIdAndUser(addressDTO.getAddressId(), existingUser)
+        Address address = addressRepository.findByAddressIdAndUserId(addressDTO.getAddressId(), userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User address not found"));
 
         mapToAddress(address, addressDTO);
@@ -65,8 +62,18 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public void removeAddress(UUID userId, Long addressId) {
-        addressRepository.deleteById(addressId);
+        addressRepository.deleteByAddressIdAndUserId(addressId, userId);
     }
+
+    @Override
+    public AddressDTO getAddressByUserIdAndAddressId(UUID userId, Long addressId) {
+
+        Address address = addressRepository.findByAddressIdAndUserId(addressId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User address not found"));
+
+        return convertToAddressDTO(address);
+    }
+
 
     private void mapToAddress(Address address, AddressDTO addressDTO) {
         address.setStreet(addressDTO.getStreet());
