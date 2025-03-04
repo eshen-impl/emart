@@ -1,13 +1,12 @@
-package com.chuwa.orderservice.entity;
+package com.chuwa.paymentservice.entity;
 
-import com.chuwa.orderservice.enums.PaymentEventType;
+import com.chuwa.paymentservice.enums.PaymentEventType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
 @Getter

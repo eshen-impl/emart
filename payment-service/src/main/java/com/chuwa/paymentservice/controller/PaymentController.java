@@ -1,11 +1,16 @@
 package com.chuwa.paymentservice.controller;
 
 import com.chuwa.paymentservice.entity.Payment;
+import com.chuwa.paymentservice.payload.RefundRequestDTO;
+import com.chuwa.paymentservice.payload.ValidatePaymentRequestDTO;
 import com.chuwa.paymentservice.service.PaymentService;
-import lombok.RequiredArgsConstructor;
+import com.chuwa.paymentservice.service.impl.PaymentServiceImpl;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -14,34 +19,42 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    public PaymentController(PaymentService paymentService) {
+    public PaymentController(PaymentServiceImpl paymentService) {
         this.paymentService = paymentService;
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<Payment> validatePayment(@RequestBody ) {
-        return ResponseEntity.ok(paymentService.validatePayment(orderId, userId, paymentMethodId, amount));
+    @Operation(summary = "Validate payment info for new and updated orders.",
+            description = "Order service sync call this API to initiate payment. ")
+    public ResponseEntity<Map<String, String>> validatePayment(@RequestBody ValidatePaymentRequestDTO validatePaymentRequestDTO, Principal principal) {
+        UUID userId = UUID.fromString(principal.getName());
+        Map<String, String> res = paymentService.validatePayment(userId, validatePaymentRequestDTO);
+        return ResponseEntity.ok(res);
     }
 
-    @PostMapping("/process/{orderId}")
-    public ResponseEntity<Payment> processPayment(@PathVariable UUID orderId) {
-        return ResponseEntity.ok(paymentService.processPayment(orderId));
+    @PutMapping("/cancel")
+    @Operation(summary = "Cancel a payment authorization before shipping. ",
+            description = "Order service sync call this API to cancel payment. ")
+    public ResponseEntity<String> cancelPayment(@RequestParam("transactionKey") UUID transactionKey) {
+        paymentService.cancelAuthorization(transactionKey);
+        return ResponseEntity.ok("Payment authorization canceled successfully!");
     }
 
-    @PostMapping("/fail/{orderId}")
-    public ResponseEntity<String> markPaymentFailed(@PathVariable UUID orderId) {
-        paymentService.markPaymentFailed(orderId);
-        return ResponseEntity.ok("Payment marked as failed");
+    @PutMapping("/refund")
+    @Operation(summary = "Initiate a refund process after delivery. ",
+            description = "Order service sync call this API to request refund. ")
+    public ResponseEntity<String> initiateRefund(@RequestBody RefundRequestDTO refundRequest) {
+        paymentService.initiateRefund(refundRequest);
+        return ResponseEntity.ok("Refund requested successfully!");
     }
 
-    @PostMapping("/refund/{orderId}")
-    public ResponseEntity<Payment> initiateRefund(@PathVariable UUID orderId) {
-        return ResponseEntity.ok(paymentService.initiateRefund(orderId));
+    @GetMapping
+    @Operation(summary = "Find a payment record for the specified order. ",
+            description = "Return only the latest payment (not voided)")
+    public ResponseEntity<Payment> findOrderPayment(@RequestParam("transactionKey") UUID transactionKey) {
+        return ResponseEntity.ok(paymentService.findPayment(transactionKey));
     }
 
-    @PostMapping("/refund/complete/{orderId}")
-    public ResponseEntity<Payment> completeRefund(@PathVariable UUID orderId) {
-        return ResponseEntity.ok(paymentService.completeRefund(orderId));
-    }
+
 }
 

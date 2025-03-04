@@ -1,12 +1,12 @@
 package com.chuwa.orderservice.payload;
 
 import com.chuwa.orderservice.enums.OrderStatus;
+import com.chuwa.orderservice.enums.PaymentRefundStatus;
 import com.chuwa.orderservice.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.cassandra.core.mapping.Column;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,6 +29,9 @@ public class OrderDTO {
     private String shippingAddress;
     private String billingAddress;
     private String paymentMethod;
-
+    private UUID transactionKey;
+    private String currency;
+    private PaymentRefundStatus refundStatus;
+    private BigDecimal refundedAmount;
 
 }

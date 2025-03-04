@@ -18,7 +18,7 @@ spring:
     log-resolved-exception: true
 
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: localhost:9091
     consumer:
       group-id: payment-group
       auto-offset-reset: earliest
@@ -28,8 +28,11 @@ spring:
         spring.json.trusted.packages: "*"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
+topic:
+  name:
+    producer: payment-events
 
 server:
   port: ${SERVER_PORT}

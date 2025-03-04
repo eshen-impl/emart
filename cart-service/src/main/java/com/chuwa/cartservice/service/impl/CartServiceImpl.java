@@ -75,7 +75,7 @@ public class CartServiceImpl implements CartService {
         }
     }
 
-    public void fallbackForItemService(CartItemRequest request, HttpServletRequest httpRequest, Throwable throwable) {
+    public ResponseEntity<Map<String, String>> fallbackForItemService(CartItemRequest request, HttpServletRequest httpRequest, Throwable throwable) {
         throw new RuntimeException("Item Service is unavailable, please try again later.\n" + throwable.getMessage());
     }
 

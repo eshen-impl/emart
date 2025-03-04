@@ -5,13 +5,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+import java.util.UUID;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateOrderRequestDTO {
-
-    private Long shippingAddressId;
-    private Long billingAddressId;
-    private Long paymentMethodId;
+public class UpdateOrderRequestDTO extends CreateOrderRequestDTO{
+    UUID orderId;
+    List<CartItem> items;
 }

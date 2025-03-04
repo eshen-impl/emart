@@ -84,9 +84,9 @@ services:
         condition: service_started
       cassandra:
         condition: service_healthy
-      cassandra-init:
-        condition: service_healthy
-#      kafka:
+#      cassandra-init:
+#        condition: service_healthy
+#      broker-1:
 #        condition: service_healthy
     networks:
       - my-network
@@ -98,15 +98,19 @@ services:
       - "8084:8084"
     environment:
       - SERVER_PORT=8084
-      - SPRING_DATASOURCE_URL=jdbc:mysql://database-1.chs06sag2xwn.us-west-2.rds.amazonaws.com:3306/emart_account?useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_URL=jdbc:mysql://database-1.chs06sag2xwn.us-west-2.rds.amazonaws.com:3306/emart_payment?useSSL=false&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=admin
       - SPRING_DATASOURCE_PASSWORD=ying1234
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     depends_on:
-      - eureka-server
-      - redis
+      eureka-server:
+        condition: service_started
+      redis:
+        condition: service_started
+#      broker-1:
+#        condition: service_healthy
     networks:
       - my-network
 
@@ -137,49 +141,109 @@ services:
     networks:
       - my-network
 
-  cassandra-init:
-    image: cassandra:latest
-    container_name: cassandra-init
-    depends_on:
-      cassandra:
-        condition: service_healthy
-    volumes:
-      - ./init.cql:/init.cql
-    healthcheck:
-      test: [ "CMD", "sh", "-c", "cqlsh cassandra -e 'DESCRIBE KEYSPACES' | grep -q 'emart_order'" ]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    entrypoint: [ "sh", "-c", "cqlsh cassandra -f /init.cql && echo 'Schema created successfully!' && sleep 60" ]
-    networks:
-      - my-network
+#  cassandra-init:
+#    image: cassandra:latest
+#    container_name: cassandra-init
+#    depends_on:
+#      cassandra:
+#        condition: service_healthy
+#    volumes:
+#      - ./init.cql:/init.cql
+#    healthcheck:
+#      test: [ "CMD", "sh", "-c", "cqlsh cassandra -e 'DESCRIBE KEYSPACES' | grep -q 'emart_order'" ]
+#      interval: 10s
+#      timeout: 10s
+#      retries: 5
+#    entrypoint: [ "sh", "-c", "cqlsh cassandra -f /init.cql && echo 'Schema created successfully!' && sleep 60" ]
+#    networks:
+#      - my-network
 
 #  zookeeper:
 #    image: confluentinc/cp-zookeeper:latest
+#    container_name: zookeeper
+#    restart: unless-stopped
+#    ports:
+#      - '12181:12181'
+#      - '2888:2888'
+#      - '3888:3888'
+#    volumes:
+#      - ./docker-data/kafkazoo/zoo1/data:/var/lib/zookeeper/data
+#      - ./docker-data/kafkazoo/zoo1/log:/var/lib/zookeeper/log
 #    environment:
-#      ZOOKEEPER_CLIENT_PORT: 2181
+#      ZOOKEEPER_SERVER_ID: 1
+#      ZOOKEEPER_CLIENT_PORT: 12181
 #      ZOOKEEPER_TICK_TIME: 2000
+#      ZOOKEEPER_INIT_LIMIT: 5
+#      ZOOKEEPER_SYNC_LIMIT: 2
+#      ZOOKEEPER_SERVERS: zookeeper:2888:3888
+#    healthcheck:
+#      test: echo stat | nc localhost 12181
+#      interval: 10s
+#      timeout: 10s
+#      retries: 3
 #    networks:
 #      - my-network
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "1m"
 #
-#  kafka:
-#    image: confluentinc/cp-kafka:latest
+#  kafka-ui:
+#    container_name: kafka-ui
+#    image: provectuslabs/kafka-ui:latest
 #    ports:
-#      - "9092:9092"
+#      - 8088:8088
 #    depends_on:
-#      - zookeeper
+#      broker-1:
+#        condition: service_healthy
+#    environment:
+#      SERVER_PORT: 8088
+#      KAFKA_CLUSTERS_0_NAME: broker-1
+#      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-1:29091
+#      KAFKA_CLUSTERS_0_METRICS_PORT: 19101
+#      DYNAMIC_CONFIG_ENABLED: 'true'
+#    networks:
+#      - my-network
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "1m"
+#
+#  broker-1:
+#    image: confluentinc/cp-kafka:latest
+#    container_name: broker-1
+#    restart: unless-stopped
+#    ports:
+#      - '9091:9091'
+#    depends_on:
+#      zookeeper:
+#        condition: service_healthy
 #    volumes:
-#      - ./docker-data/kafka:/var/lib/kafka/data
+#      - ./docker-data/kafkazoo/kafka1:/var/lib/kafka/data
 #    environment:
 #      KAFKA_BROKER_ID: 1
-#      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kilo-doc-rest-kafka:29092
+#      KAFKA_ZOOKEEPER_CONNECT: zookeeper:12181
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+#      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+#      KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker-1:29091,EXTERNAL://localhost:9091
 #      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 #      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 #      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+#      KAFKA_NUM_PARTITIONS: 3
+#      KAFKA_JMX_PORT: 19101
+#      KAFKA_JMX_HOSTNAME: broker-1
+#    healthcheck:
+#      test: nc -vz localhost 9091
+#      interval: 10s
+#      timeout: 10s
+#      retries: 3
 #    networks:
 #      - my-network
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "1m"
 
 networks:
   my-network:

@@ -2,11 +2,11 @@ package com.chuwa.orderservice.service.impl;
 
 import com.chuwa.orderservice.client.AccountClient;
 import com.chuwa.orderservice.client.ItemClient;
+import com.chuwa.orderservice.client.PaymentClient;
 import com.chuwa.orderservice.dao.OrderByUserRepository;
 import com.chuwa.orderservice.dao.OrderRepository;
 import com.chuwa.orderservice.entity.*;
-import com.chuwa.orderservice.enums.OrderStatus;
-import com.chuwa.orderservice.enums.PaymentStatus;
+import com.chuwa.orderservice.enums.*;
 import com.chuwa.orderservice.exception.EmptyCartException;
 import com.chuwa.orderservice.exception.InsufficientStockException;
 import com.chuwa.orderservice.exception.ResourceNotFoundException;
@@ -18,7 +18,6 @@ import com.chuwa.orderservice.util.JsonUtil;
 import com.chuwa.orderservice.util.UUIDUtil;
 import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -34,83 +33,122 @@ public class OrderServiceImpl implements OrderService {
     private final OrderByUserRepository orderByUserRepository;
     private final CartRedisUtil cartRedisUtil;
     private final ItemClient itemClient;
-
     private final AccountClient accountClient;
+    private final PaymentClient paymentClient;
 
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderByUserRepository orderByUserRepository, CartRedisUtil cartRedisUtil, ItemClient itemClient, AccountClient accountClient) {
+    public OrderServiceImpl(OrderRepository orderRepository, OrderByUserRepository orderByUserRepository, CartRedisUtil cartRedisUtil, ItemClient itemClient, AccountClient accountClient, PaymentClient paymentClient) {
         this.orderRepository = orderRepository;
         this.orderByUserRepository = orderByUserRepository;
         this.cartRedisUtil = cartRedisUtil;
         this.itemClient = itemClient;
         this.accountClient = accountClient;
+        this.paymentClient = paymentClient;
     }
 
     @CircuitBreaker(name = "createOrder", fallbackMethod = "fallbackForCreateOrder")
     public OrderDTO createOrder(UUID userId, CreateOrderRequestDTO createOrderRequestDTO) {
-        UUID orderId = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
+
+        Order order = new Order();
+
+        //retrieve cart items from redis
         String cartKey = "cart:"+ UUIDUtil.encodeUUID(userId);
         List<CartItem> items = cartRedisUtil.getCartItems(cartKey);
         if (items.isEmpty()) throw new EmptyCartException("Nothing in your cart yet. Please add something first!");
-        validateOrderItems(items); // check requested units of each item in cart not exceeding available units
 
-        AddressDTO billingAddress;
-        AddressDTO shippingAddress;
-        PaymentMethodDTO paymentMethod;
+        //sync call item service to check requested units of each item in cart not exceeding available units
+        validateOrderItems(items);
 
-        try {
-             billingAddress = accountClient.getAddress(createOrderRequestDTO.getBillingAddressId());
-             shippingAddress = accountClient.getAddress(createOrderRequestDTO.getShippingAddressId());
-             paymentMethod = accountClient.getPaymentMethod(createOrderRequestDTO.getPaymentMethodId());
-        } catch (FeignException.NotFound e) {
-            throw new ResourceNotFoundException("Address or Payment Method not found in Account Service");
-        } catch (FeignException e) {
-            throw new RuntimeException("Error calling Account Service", e);
-        }
+        //sync call account service to retrieve and set address and payment method snapshot on order
+        setAddressAndPaymentMethod(order, createOrderRequestDTO);
 
-        String itemsJson = JsonUtil.toJson(items);
-        double totalAmount = items.stream()
-                .mapToDouble(item -> item.getQuantity() * item.getUnitPrice())
-                .sum();
-
-        PaymentMethodDTO paymentMethodForOrder = hideSensitivePaymentMethodInfo(paymentMethod);
-
-        Order order = new Order();
-        order.setOrderId(orderId);
+        order.setOrderId(UUID.randomUUID());
         order.setUserId(userId);
         order.setOrderStatus(OrderStatus.CREATED);
-        order.setTotalAmount(BigDecimal.valueOf(totalAmount));
+        order.setTotalAmount(BigDecimal.valueOf(items.stream()
+                .mapToDouble(item -> item.getQuantity() * item.getUnitPrice())
+                .sum()));
+
+        LocalDateTime now = LocalDateTime.now();
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
-        order.setItems(itemsJson);
-        order.setBillingAddress(JsonUtil.toJson(billingAddress));
-        order.setShippingAddress(JsonUtil.toJson(shippingAddress));
-        order.setPaymentMethod(JsonUtil.toJson(paymentMethodForOrder));
-        order.setPaymentStatus(PaymentStatus.PENDING);
 
+        order.setItems(JsonUtil.toJson(items));
+        order.setPaymentStatus(PaymentStatus.PENDING);
+        order.setTransactionKey(UUID.randomUUID());
+        order.setCurrency(Currency.getInstance("USD"));
+
+        //sync call payment service to validate payment method
+        try {
+            if (order.getTotalAmount().compareTo(BigDecimal.ZERO) > 0) {
+                Map<String, String> res = paymentClient.initiatePayment(
+                        new ValidatePaymentRequestDTO(order.getOrderId(), order.getTransactionKey(),
+                                                        createOrderRequestDTO.getPaymentMethodId(),
+                                                        order.getTotalAmount(), order.getCurrency().getCurrencyCode()));
+                if (Boolean.parseBoolean(res.get("isValid"))) {
+                    order.setPaymentStatus(PaymentStatus.VALIDATED);
+                } else {
+                    order.setPaymentStatus(PaymentStatus.FAILED);
+                    order.setOrderStatus(OrderStatus.CANCELED);
+                }
+            }
+        } catch (FeignException e) {
+           //do nothing just proceed to save order with payment status as pending;
+            // plan to do a scheduled check through all pending orders and call payment service later
+        }
 
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
-//        orderEventPublisher.sendOrderEvent(order); //to other microservices except payment
-//        cartRedisUtil.clearCart(cartKey);
-//        paymentServiceClient.initiatePayment(order, order.getTotalAmount());
-//        orderRepository.save(order);
+        cartRedisUtil.clearCart(cartKey);
 
         return convertToDTO(order);
     }
 
-    public void fallbackForCreateOrder(UUID userId, CreateOrderRequestDTO createOrderRequestDTO, Throwable throwable) {
+    public OrderDTO fallbackForCreateOrder(UUID userId, CreateOrderRequestDTO createOrderRequestDTO, Throwable throwable) {
         throw new RuntimeException("Service is unavailable, please try again later.\n" + throwable.getMessage());
     }
 
-    public OrderDTO updateOrder(UUID orderId, OrderDTO orderDTO) {
-        Order order = orderRepository.findByOrderId(orderId)
+    @CircuitBreaker(name = "updateOrder", fallbackMethod = "fallbackForUpdateOrder")
+    public OrderDTO updateOrder(UpdateOrderRequestDTO updateRequest) {
+        Order order = orderRepository.findByOrderId(updateRequest.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        BigDecimal originalTotal = order.getTotalAmount();
 
-        order.setTotalAmount(orderDTO.getTotalAmount());
-        order.setItems(orderDTO.getItems());
+        List<CartItem> items = updateRequest.getItems();
+        if (items != null) {
+            validateOrderItems(items);
+            order.setItems(JsonUtil.toJson(items));
+            order.setTotalAmount(BigDecimal.valueOf(items.stream()
+                    .mapToDouble(item -> item.getQuantity() * item.getUnitPrice())
+                    .sum()));
+        }
+
+        setAddressAndPaymentMethod(order, updateRequest);
+
+        order.setOrderStatus(OrderStatus.UPDATED);
         order.setUpdatedAt(LocalDateTime.now());
+        order.setPaymentStatus(PaymentStatus.ADJUSTMENT_PENDING);
+        order.setTransactionKey(UUID.randomUUID());
+        order.setCurrency(Currency.getInstance("USD"));
+
+        try {
+            if (order.getTotalAmount().compareTo(BigDecimal.ZERO) > 0
+                && (!Objects.equals(originalTotal, order.getTotalAmount()) || updateRequest.getPaymentMethodId() != null)) {
+                Map<String, String> res = paymentClient.initiatePayment(
+                        new ValidatePaymentRequestDTO(order.getOrderId(), order.getTransactionKey(),
+                                updateRequest.getPaymentMethodId(),
+                                order.getTotalAmount(), order.getCurrency().getCurrencyCode()));
+                if (Boolean.parseBoolean(res.get("isValid"))) {
+                    order.setPaymentStatus(PaymentStatus.VALIDATED);
+                } else {
+                    order.setPaymentStatus(PaymentStatus.FAILED);
+                    order.setOrderStatus(OrderStatus.SUSPENDED);
+                }
+            }
+        } catch (FeignException e) {
+            //do nothing just proceed to save order with payment status as pending;
+            // plan to do a scheduled check through all adjustment pending orders and call payment service later
+        }
 
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
@@ -118,27 +156,52 @@ public class OrderServiceImpl implements OrderService {
         return convertToDTO(order);
     }
 
+    public OrderDTO fallbackForUpdateOrder(UpdateOrderRequestDTO updateRequest, Throwable throwable) {
+        throw new RuntimeException("Service is unavailable, please try again later.\n" + throwable.getMessage());
+    }
 
     public OrderDTO cancelOrder(UUID orderId) {
         Order order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
+        Set<OrderStatus> nonCancelableStatuses = Set.of(OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELED);
+        if (nonCancelableStatuses.contains(order.getOrderStatus())) {
+            throw new IllegalStateException("Order cannot be canceled in status: " + order.getOrderStatus());
+        }
 
-
-//        if (order.getOrderStatus().equals(OrderStatus.PAID.toString())) {
-            order.setOrderStatus(OrderStatus.CANCELED);
-            order.setPaymentStatus(PaymentStatus.PENDING);
-//            paymentServiceClient.initiateRefund(order, order.getTotalAmount());
-            order.setUpdatedAt(LocalDateTime.now());
-
-//        } else {
-//            throw new RuntimeException("Order cannot be canceled");
-//        }
-
-
+        order.setOrderStatus(OrderStatus.CANCELED);
+        order.setPaymentStatus(PaymentStatus.CANCELED);
+        order.setUpdatedAt(LocalDateTime.now());
+        try {
+            paymentClient.cancelAuthorization(order.getTransactionKey());
+        } catch (FeignException e) {
+            throw new RuntimeException("Error calling cancel authorization from payment service." + e.getMessage());
+        }
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
 //        orderEventPublisher.sendOrderEvent(order);
+        return convertToDTO(order);
+    }
+
+    @Override
+    public OrderDTO refundOrder(RefundRequestDTO refundRequest) {
+        Order order = orderRepository.findByOrderId(refundRequest.getOrderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getOrderStatus() != OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Cannot request refund in order status: " + order.getOrderStatus());
+        }
+
+        order.setRefundStatus(PaymentRefundStatus.REFUND_REQUESTED);
+        order.setUpdatedAt(LocalDateTime.now());
+        try {
+            paymentClient.initiateRefund(refundRequest);
+        } catch (FeignException e) {
+            throw new RuntimeException("Error calling initiate refund from payment service. " + e.getMessage());
+        }
+        orderRepository.save(order);
+        orderByUserRepository.save(convertToOrderByUser(order));
+
         return convertToDTO(order);
     }
 
@@ -153,22 +216,6 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
-    public OrderDTO completeOrder(UUID orderId) {
-        Order order = orderRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-
-        if (!"Paid".equals(order.getPaymentStatus())) {
-            throw new IllegalStateException("Order must be paid before completing.");
-        }
-
-        order.setOrderStatus(OrderStatus.DELIVERED);
-        order.setUpdatedAt(LocalDateTime.now());
-
-        orderRepository.save(order);
-        orderByUserRepository.save(convertToOrderByUser(order));
-
-        return convertToDTO(order);
-    }
 
     @Override
     public void processPaymentResponse(PaymentEvent event) {
@@ -177,20 +224,33 @@ public class OrderServiceImpl implements OrderService {
         if (orderOpt.isEmpty()) return;
 
         Order order = orderOpt.get();
-        if (event.getEventType().equals("payment_succeed")) {
+        if (event.getEventType() == PaymentEventType.PAYMENT_CHARGE_SUCCEED) {
             order.setOrderStatus(OrderStatus.SHIPPED);
             order.setPaymentStatus(PaymentStatus.PAID);
-        } else if (event.getEventType().equals("payment_authorization_failed")) {
+        } else if (event.getEventType() == PaymentEventType.PAYMENT_CHARGE_FAILED) {
             order.setOrderStatus(OrderStatus.SUSPENDED);
             order.setPaymentStatus(PaymentStatus.FAILED);
-        } else if (event.getEventType().equals("payment_refunded")) {
-            order.setOrderStatus(OrderStatus.REFUNDED);
-            order.setPaymentStatus(PaymentStatus.REFUNDED);
+        } else if (event.getEventType() == PaymentEventType.PAYMENT_REFUNDED) {
+            order.setRefundStatus(PaymentRefundStatus.REFUNDED);
+            order.setRefundedAmount(event.getRefundedAmount());
         }
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);
     }
 
+    public void processShippingResponse(ShippingEvent event) {
+        UUID orderId = event.getOrderId();
+        Optional<Order> orderOpt = orderRepository.findByOrderId(orderId);
+        if (orderOpt.isEmpty()) return;
+
+        Order order = orderOpt.get();
+        if (event.getEventType() == ShippingEventType.DELIVERED) {
+            order.setOrderStatus(OrderStatus.DELIVERED);
+        }
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+    }
 
     private void validateOrderItems(List<CartItem> orderItems) {
         List<String> itemIds = orderItems.stream().map(CartItem::getItemId).collect(Collectors.toList());
@@ -214,6 +274,29 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    private void setAddressAndPaymentMethod(Order order, CreateOrderRequestDTO orderRequest){
+
+        try {
+            Long billingAddressId = orderRequest.getBillingAddressId();
+            Long shippingAddressId = orderRequest.getShippingAddressId();
+            Long paymentMethodId = orderRequest.getPaymentMethodId();
+
+            if (billingAddressId != null) {
+                order.setBillingAddress(JsonUtil.toJson(accountClient.getAddress(billingAddressId)));
+            }
+            if (shippingAddressId != null) {
+                order.setShippingAddress(JsonUtil.toJson(accountClient.getAddress(shippingAddressId)));
+            }
+            if (paymentMethodId != null) {
+                order.setPaymentMethod(JsonUtil.toJson(hideSensitivePaymentMethodInfo(accountClient.getPaymentMethod(paymentMethodId))));
+            }
+        } catch (FeignException.NotFound e) {
+            throw new ResourceNotFoundException("Address or Payment Method not found in Account Service");
+        } catch (FeignException e) {
+            throw new RuntimeException("Error calling Account Service", e);
+        }
+
+    }
 
     private PaymentMethodDTO hideSensitivePaymentMethodInfo(PaymentMethodDTO paymentMethodDTO) {
         PaymentMethodDTO paymentMethodForOrder = new PaymentMethodDTO();
@@ -230,7 +313,8 @@ public class OrderServiceImpl implements OrderService {
         return new OrderDTO(order.getOrderId(), order.getUserId(), order.getOrderStatus(),
                 order.getTotalAmount(), order.getCreatedAt(), order.getUpdatedAt(),
                 order.getItems(), order.getPaymentStatus(), order.getShippingAddress(),
-                order.getBillingAddress(), order.getPaymentMethod());
+                order.getBillingAddress(), order.getPaymentMethod(), order.getTransactionKey(),
+                order.getCurrency().getCurrencyCode(), order.getRefundStatus(), order.getRefundedAmount());
 
     }
 
@@ -238,13 +322,15 @@ public class OrderServiceImpl implements OrderService {
         return new OrderDTO(order.getOrderId(), order.getUserId(), order.getOrderStatus(),
                 order.getTotalAmount(), order.getCreatedAt(), order.getUpdatedAt(),
                 order.getItems(), order.getPaymentStatus(), order.getShippingAddress(),
-                order.getBillingAddress(), order.getPaymentMethod());
+                order.getBillingAddress(), order.getPaymentMethod(), order.getTransactionKey(),
+                order.getCurrency().getCurrencyCode(), order.getRefundStatus(), order.getRefundedAmount());
     }
 
     private OrderByUser convertToOrderByUser(Order order) {
         return new OrderByUser(order.getUserId(), order.getCreatedAt(), order.getOrderId(),
                 order.getOrderStatus(), order.getTotalAmount(), order.getUpdatedAt(),
                 order.getItems(), order.getPaymentStatus(), order.getShippingAddress(),
-                order.getBillingAddress(), order.getPaymentMethod());
+                order.getBillingAddress(), order.getPaymentMethod(), order.getTransactionKey(),
+                order.getCurrency().getCurrencyCode(), order.getRefundStatus(), order.getRefundedAmount());
     }
 }

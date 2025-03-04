@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 
 
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+@SpringBootApplication
 @EnableFeignClients
 @ComponentScan(basePackages = {"com.chuwa.orderservice", "com.chuwa.securitylib"})
 public class OrderServiceApplication {

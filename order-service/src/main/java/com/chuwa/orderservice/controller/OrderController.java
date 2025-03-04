@@ -2,6 +2,8 @@ package com.chuwa.orderservice.controller;
 
 import com.chuwa.orderservice.payload.CreateOrderRequestDTO;
 import com.chuwa.orderservice.payload.OrderDTO;
+import com.chuwa.orderservice.payload.RefundRequestDTO;
+import com.chuwa.orderservice.payload.UpdateOrderRequestDTO;
 import com.chuwa.orderservice.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.ResponseEntity;
@@ -30,29 +32,27 @@ public class OrderController {
         return ResponseEntity.ok(orderService.createOrder(userId, createOrderRequestDTO));
     }
 
-    @PutMapping("/cancel/{orderId}")
-    @PostMapping("/create")
+    @PutMapping("/cancel")
     @Operation(summary = "Cancel an existing order.",
-            description = "Order status changed to be cancelled. Payment refund functionality WIP. "
+            description = "Order status can changed to be cancelled before shipping. "
                     + "Required to be authenticated (have signed in)")
-    public ResponseEntity<OrderDTO> cancelOrder(@PathVariable("orderId") UUID orderId) {
+    public ResponseEntity<OrderDTO> cancelOrder(@RequestParam("orderId") UUID orderId) {
         return ResponseEntity.ok(orderService.cancelOrder(orderId));
     }
 
-    @PutMapping("/update/{orderId}")
-    @Operation(summary = "Update an existing order's total amount and items. ",
+    @PutMapping("/update")
+    @Operation(summary = "Update an existing order (total amount, items, shipping/billing address and payment method). ",
             description = "Currently items need to be in JSON string format. "
                     + "Required to be authenticated (have signed in)")
-    public ResponseEntity<OrderDTO> updateOrder(@PathVariable("orderId") UUID orderId, @RequestBody OrderDTO orderDTO) {
-        return ResponseEntity.ok(orderService.updateOrder(orderId, orderDTO));
+    public ResponseEntity<OrderDTO> updateOrder(@RequestBody UpdateOrderRequestDTO updateOrderRequestDTO) {
+        return ResponseEntity.ok(orderService.updateOrder(updateOrderRequestDTO));
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PutMapping("/complete/{orderId}")
-    @Operation(summary = "Set status to completed for an existing order. ",
-            description = "Required to have role 'ROLE_ADMIN'")
-    public ResponseEntity<OrderDTO> completeOrder(@PathVariable("orderId") UUID orderId) {
-        return ResponseEntity.ok(orderService.completeOrder(orderId));
+    @PutMapping("/refund")
+    @Operation(summary = "Request refund for an existing order. ",
+            description = "Required to be authenticated (have signed in)")
+    public ResponseEntity<OrderDTO> refundOrder(@RequestBody RefundRequestDTO refundRequestDTO) {
+        return ResponseEntity.ok(orderService.refundOrder(refundRequestDTO));
     }
 
     @GetMapping("/history")

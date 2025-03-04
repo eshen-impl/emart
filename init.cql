@@ -13,7 +13,11 @@ CREATE TABLE IF NOT EXISTS orders (
                                       payment_status TEXT,
                                       shipping_address TEXT,
                                       billing_address TEXT,
-                                      payment_method TEXT
+                                      payment_method TEXT,
+                                      transaction_key UUID,
+                                      currency TEXT,
+                                      refund_status TEXT,
+                                      refunded_amount DECIMAL
 );
 
 CREATE TABLE IF NOT EXISTS orders_by_user (
@@ -28,5 +32,9 @@ CREATE TABLE IF NOT EXISTS orders_by_user (
                                               shipping_address TEXT,
                                               billing_address TEXT,
                                               payment_method TEXT,
+                                              transaction_key UUID,
+                                              currency TEXT,
+                                              refund_status TEXT,
+                                              refunded_amount DECIMAL,
                                               PRIMARY KEY (user_id, created_at)
 ) WITH CLUSTERING ORDER BY (created_at DESC);
