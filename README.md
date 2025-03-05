@@ -1,6 +1,7 @@
 ### Microservices Architecture & Data Flow
 
-![](README.assets/Emart data flow.drawio.png)
+![Emart data flow drawio](https://github.com/user-attachments/assets/8a9e1985-d0fa-45a3-bc7e-ec35ae8b6513)
+
 
 
 
