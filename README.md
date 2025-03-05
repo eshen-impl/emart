@@ -1,4 +1,32 @@
-Run docker-compose up -d  in root directory
+### Microservices Architecture & Data Flow
+
+![](README.assets/Emart data flow.drawio.png)
+
+
+
+### Order & Payment State Transition Flow
+
+| Event                                          | Order Status                                | Payment Status                                               | Interservice Call (Sync/Async)                               |
+| ---------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------ | :----------------------------------------------------------- |
+| User places an order                           | CREATED                                     | PENDING (if payment service unavailable / any exception thrown) | Sync (1. Order → Item: check availability; 2. Account: get address / paymentmethod; 3. Payment: validate card) |
+| Payment validation success                     | CREATED                                     | VALIDATED                                                    | Async (Order → Kafka  → Shipping)                            |
+| Payment validation fails                       | CANCELED                                    | FAILED                                                       |                                                              |
+| User adds/removes item(s) to an existing order | UPDATED                                     | ADJUSTMENT_PENDING (if payment service unavailable / any exception thrown) | Sync (Order → Item: check availability; Order → Payment: validate update) |
+| Payment validation success for update          | UPDATED                                     | VALIDATED (new) VOIDED (original)                            | Async (Order → Kafka → Shipping)                             |
+| Payment validation fails for update            | SUSPENDED                                   | FAILED (new)      VOIDED (original)                          | Async (Order → Kafka → Shipping)                             |
+| Shipping Service processes order               | with status: CREATED/UPDATED                | with status:  VALIDATED                                      | Async (Shipping → Kafka → Payment)                           |
+| Payment processed successfully                 | SHIPPED                                     | PAID                                                         | Async (Payment → Kafka → Order/Shipping)                     |
+| Payment failed                                 | SUSPENDED                                   | FAILED                                                       | Async (Payment → Kafka → Order/Shipping)                     |
+| User cancels order before shipping             | CANCELED                                    | CANCELED                                                     | Sync (Order → Payment: cancel authorization) + Async (Order → Kafka → Shipping) |
+| Order marked as delivered                      | DELIVERED                                   | PAID                                                         | Async (Shipping → Kafka → Order)                             |
+| Refund requested after delivery                | DELIVERED (order) REFUND_REQUESTED (refund) | PAID (payment) REFUND_REQUESTED (refund)                     | Sync (Order → Payment: initiate refund)                      |
+| Refund approved and processed                  | DELIVERED (order) REFUNDED (refund)         | PAID (payment) REFUNDED (refund)                             | Async (Payment → Kafka → Order)                              |
+
+
+
+### Deployment
+
+Run docker-compose up -d  in your root directory
 
 http://localhost:8080/swagger-ui/index.html - account-service
 
@@ -8,18 +36,10 @@ http://localhost:8082/swagger-ui/index.html - cart-service
 
 http://localhost:8083/swagger-ui/index.html - order-service
 
-payment-service WIP
+http://localhost:8084/swagger-ui/index.html - payment-service
 
-![image-20250228171205899](README.assets/image-20250228171205899.png)
+http://localhost:8085/swagger-ui/index.html - shipping-service
 
-![image-20250228171305612](README.assets/image-20250228171305612.png)
+http://localhost:8761/ - Eureka server
 
-![image-20250228171326640](README.assets/image-20250228171326640.png)
-
-![image-20250228171217123](README.assets/image-20250228171217123.png)
-
-![image-20250228171343585](README.assets/image-20250228171343585.png)
-
-![image-20250228171353302](README.assets/image-20250228171353302.png)
-
-![image-20250228171401942](README.assets/image-20250228171401942.png)
+http://localhost:8088/ - Kafka UI
