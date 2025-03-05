@@ -12,6 +12,7 @@ import com.chuwa.orderservice.exception.InsufficientStockException;
 import com.chuwa.orderservice.exception.ResourceNotFoundException;
 import com.chuwa.orderservice.payload.*;
 //import com.chuwa.orderservice.publisher.OrderEventPublisher;
+import com.chuwa.orderservice.producer.OrderEventProducer;
 import com.chuwa.orderservice.service.OrderService;
 import com.chuwa.orderservice.util.CartRedisUtil;
 import com.chuwa.orderservice.util.JsonUtil;
@@ -28,22 +29,22 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
 
-//    private final OrderEventPublisher orderEventPublisher;
     private final OrderRepository orderRepository;
     private final OrderByUserRepository orderByUserRepository;
     private final CartRedisUtil cartRedisUtil;
     private final ItemClient itemClient;
     private final AccountClient accountClient;
     private final PaymentClient paymentClient;
+    private final OrderEventProducer orderEventProducer;
 
-
-    public OrderServiceImpl(OrderRepository orderRepository, OrderByUserRepository orderByUserRepository, CartRedisUtil cartRedisUtil, ItemClient itemClient, AccountClient accountClient, PaymentClient paymentClient) {
+    public OrderServiceImpl(OrderRepository orderRepository, OrderByUserRepository orderByUserRepository, CartRedisUtil cartRedisUtil, ItemClient itemClient, AccountClient accountClient, PaymentClient paymentClient, OrderEventProducer orderEventProducer) {
         this.orderRepository = orderRepository;
         this.orderByUserRepository = orderByUserRepository;
         this.cartRedisUtil = cartRedisUtil;
         this.itemClient = itemClient;
         this.accountClient = accountClient;
         this.paymentClient = paymentClient;
+        this.orderEventProducer = orderEventProducer;
     }
 
     @CircuitBreaker(name = "createOrder", fallbackMethod = "fallbackForCreateOrder")
@@ -87,6 +88,7 @@ public class OrderServiceImpl implements OrderService {
                                                         order.getTotalAmount(), order.getCurrency().getCurrencyCode()));
                 if (Boolean.parseBoolean(res.get("isValid"))) {
                     order.setPaymentStatus(PaymentStatus.VALIDATED);
+                    orderEventProducer.sendToShipping(convertToOrderEvent(order, OrderEventType.NEW_ORDER));
                 } else {
                     order.setPaymentStatus(PaymentStatus.FAILED);
                     order.setOrderStatus(OrderStatus.CANCELED);
@@ -140,9 +142,11 @@ public class OrderServiceImpl implements OrderService {
                                 order.getTotalAmount(), order.getCurrency().getCurrencyCode()));
                 if (Boolean.parseBoolean(res.get("isValid"))) {
                     order.setPaymentStatus(PaymentStatus.VALIDATED);
+                    orderEventProducer.sendToShipping(convertToOrderEvent(order, OrderEventType.UPDATE_ORDER));
                 } else {
                     order.setPaymentStatus(PaymentStatus.FAILED);
                     order.setOrderStatus(OrderStatus.SUSPENDED);
+                    orderEventProducer.sendToShipping(convertToOrderEvent(order, OrderEventType.SUSPEND_ORDER));
                 }
             }
         } catch (FeignException e) {
@@ -152,7 +156,7 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
-//        orderEventPublisher.sendOrderEvent(order);
+
         return convertToDTO(order);
     }
 
@@ -174,12 +178,16 @@ public class OrderServiceImpl implements OrderService {
         order.setUpdatedAt(LocalDateTime.now());
         try {
             paymentClient.cancelAuthorization(order.getTransactionKey());
+        } catch (FeignException.NotFound e) {
+            throw new ResourceNotFoundException(e.getMessage());
+        } catch (FeignException.Conflict e) {
+            throw new IllegalStateException(e.getMessage());
         } catch (FeignException e) {
             throw new RuntimeException("Error calling cancel authorization from payment service." + e.getMessage());
         }
         orderRepository.save(order);
         orderByUserRepository.save(convertToOrderByUser(order));
-//        orderEventPublisher.sendOrderEvent(order);
+        orderEventProducer.sendToShipping(convertToOrderEvent(order, OrderEventType.CANCEL_ORDER));
         return convertToDTO(order);
     }
 
@@ -196,6 +204,10 @@ public class OrderServiceImpl implements OrderService {
         order.setUpdatedAt(LocalDateTime.now());
         try {
             paymentClient.initiateRefund(refundRequest);
+        } catch (FeignException.NotFound e) {
+            throw new ResourceNotFoundException(e.getMessage());
+        } catch (FeignException.Conflict e) {
+            throw new IllegalStateException(e.getMessage());
         } catch (FeignException e) {
             throw new RuntimeException("Error calling initiate refund from payment service. " + e.getMessage());
         }
@@ -233,9 +245,12 @@ public class OrderServiceImpl implements OrderService {
         } else if (event.getEventType() == PaymentEventType.PAYMENT_REFUNDED) {
             order.setRefundStatus(PaymentRefundStatus.REFUNDED);
             order.setRefundedAmount(event.getRefundedAmount());
+        } else if (event.getEventType() == PaymentEventType.PAYMENT_REFUND_DENIED) {
+            order.setRefundStatus(PaymentRefundStatus.NOT_REFUNDED);
         }
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);
+        orderByUserRepository.save(convertToOrderByUser(order));
     }
 
     public void processShippingResponse(ShippingEvent event) {
@@ -249,6 +264,7 @@ public class OrderServiceImpl implements OrderService {
         }
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);
+        orderByUserRepository.save(convertToOrderByUser(order));
 
     }
 
@@ -332,5 +348,12 @@ public class OrderServiceImpl implements OrderService {
                 order.getItems(), order.getPaymentStatus(), order.getShippingAddress(),
                 order.getBillingAddress(), order.getPaymentMethod(), order.getTransactionKey(),
                 order.getCurrency().getCurrencyCode(), order.getRefundStatus(), order.getRefundedAmount());
+    }
+
+    private OrderEvent convertToOrderEvent(Order order, OrderEventType type) {
+        return new OrderEvent(type,
+                order.getUserId(), order.getOrderId(),
+                order.getItems(), order.getShippingAddress(),
+                order.getCreatedAt(), order.getUpdatedAt());
     }
 }

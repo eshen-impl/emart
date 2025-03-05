@@ -1,11 +1,10 @@
-package com.chuwa.orderservice.entity;
+package com.chuwa.shippingservice.payload;
 
-import com.chuwa.orderservice.enums.OrderEventType;
+import com.chuwa.shippingservice.enums.OrderEventType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 
 import java.time.LocalDateTime;
 import java.util.UUID;

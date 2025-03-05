@@ -1,4 +1,4 @@
-package com.chuwa.paymentservice.enums;
+package com.chuwa.shippingservice.enums;
 
 public enum PaymentEventType {
 

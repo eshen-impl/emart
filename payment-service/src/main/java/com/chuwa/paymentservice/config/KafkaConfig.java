@@ -1,10 +1,8 @@
-package com.chuwa.orderservice.config;
+package com.chuwa.paymentservice.config;
 
 
-
-import com.chuwa.orderservice.payload.OrderEvent;
-import com.chuwa.orderservice.payload.PaymentEvent;
-import com.chuwa.orderservice.payload.ShippingEvent;
+import com.chuwa.paymentservice.payload.PaymentEvent;
+import com.chuwa.paymentservice.payload.ShippingEvent;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -24,11 +22,12 @@ import java.util.Map;
 
 @Configuration
 public class KafkaConfig {
+
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
     @Bean
-    public ProducerFactory<String, OrderEvent> producerFactory() {
+    public ProducerFactory<String, PaymentEvent> producerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -37,14 +36,14 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, OrderEvent> kafkaTemplate() {
+    public KafkaTemplate<String, PaymentEvent> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 
     private Map<String, Object> consumerConfigs() {
         return Map.of(
                 "bootstrap.servers", bootstrapServers,
-                "group.id", "order-group",
+                "group.id", "payment-group",
                 "auto.offset.reset", "earliest"
         );
     }
@@ -63,20 +62,6 @@ public class KafkaConfig {
     }
 
     @Bean
-    @Qualifier("paymentEventConsumerFactory")
-    public ConsumerFactory<String, PaymentEvent> paymentEventConsumerFactory() {
-        JsonDeserializer<PaymentEvent> deserializer = new JsonDeserializer<>(PaymentEvent.class, false);
-        deserializer.addTrustedPackages("*");
-
-        return new DefaultKafkaConsumerFactory<>(
-                consumerConfigs(),
-                new StringDeserializer(),
-                deserializer
-        );
-    }
-
-
-    @Bean
     @Qualifier("shippingEventListenerFactory")
     public ConcurrentKafkaListenerContainerFactory<String, ShippingEvent> shippingEventListenerFactory(
             @Qualifier("shippingEventConsumerFactory") ConsumerFactory<String, ShippingEvent> consumerFactory) {
@@ -86,18 +71,15 @@ public class KafkaConfig {
     }
 
     @Bean
-    @Qualifier("paymentEventListenerFactory")
-    public ConcurrentKafkaListenerContainerFactory<String, PaymentEvent> paymentEventListenerFactory(
-            @Qualifier("paymentEventConsumerFactory") ConsumerFactory<String, PaymentEvent> consumerFactory) {
-        ConcurrentKafkaListenerContainerFactory<String, PaymentEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory);
-        return factory;
+    public NewTopic paymentToOrderTopic() {
+        return new NewTopic("payment-to-order", 3, (short) 1);
     }
 
     @Bean
-    public NewTopic orderToShippingTopic() {
-        return new NewTopic("order-to-shipping", 3, (short) 1);
+    public NewTopic paymentToShippingTopic() {
+        return new NewTopic("payment-to-shipping", 3, (short) 1);
     }
+
 
 }
 

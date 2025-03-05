@@ -1,7 +1,6 @@
-package com.chuwa.paymentservice.entity;
+package com.chuwa.orderservice.payload;
 
-
-import com.chuwa.paymentservice.enums.ShippingEventType;
+import com.chuwa.orderservice.enums.ShippingEventType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,7 +1,7 @@
 package com.chuwa.orderservice.service;
 
-import com.chuwa.orderservice.entity.PaymentEvent;
-import com.chuwa.orderservice.entity.ShippingEvent;
+import com.chuwa.orderservice.payload.PaymentEvent;
+import com.chuwa.orderservice.payload.ShippingEvent;
 import com.chuwa.orderservice.payload.CreateOrderRequestDTO;
 import com.chuwa.orderservice.payload.OrderDTO;
 import com.chuwa.orderservice.payload.RefundRequestDTO;

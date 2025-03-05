@@ -3,15 +3,14 @@ package com.chuwa.paymentservice.service.impl;
 
 import com.chuwa.paymentservice.client.AccountClient;
 import com.chuwa.paymentservice.entity.Payment;
-import com.chuwa.paymentservice.entity.ShippingEvent;
+import com.chuwa.paymentservice.enums.PaymentEventType;
+import com.chuwa.paymentservice.payload.*;
 import com.chuwa.paymentservice.enums.PaymentRefundStatus;
 import com.chuwa.paymentservice.enums.PaymentStatus;
 import com.chuwa.paymentservice.dao.PaymentRepository;
 import com.chuwa.paymentservice.enums.ShippingEventType;
 import com.chuwa.paymentservice.exception.ResourceNotFoundException;
-import com.chuwa.paymentservice.payload.PaymentMethodDTO;
-import com.chuwa.paymentservice.payload.RefundRequestDTO;
-import com.chuwa.paymentservice.payload.ValidatePaymentRequestDTO;
+import com.chuwa.paymentservice.producer.PaymentEventProducer;
 import com.chuwa.paymentservice.service.PaymentService;
 import com.chuwa.paymentservice.util.JsonUtil;
 import feign.FeignException;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -33,11 +31,13 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final AccountClient accountClient;
     private final ThreadPoolTaskScheduler taskScheduler;
+    private final PaymentEventProducer paymentEventProducer;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository, AccountClient accountClient, ThreadPoolTaskScheduler taskScheduler) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository, AccountClient accountClient, ThreadPoolTaskScheduler taskScheduler, PaymentEventProducer paymentEventProducer) {
         this.paymentRepository = paymentRepository;
         this.accountClient = accountClient;
         this.taskScheduler = taskScheduler;
+        this.paymentEventProducer = paymentEventProducer;
     }
 
     @Transactional
@@ -108,21 +108,31 @@ public class PaymentServiceImpl implements PaymentService {
                 .ifPresent((payment) -> {
                     if (payment.getStatus() == PaymentStatus.VALIDATED) {
                         payment.setStatus(PaymentStatus.PAID);
-
-                        //kafka: send payment success
                         paymentRepository.save(payment);
-                        return;
+                        paymentEventProducer.sendToShipping(
+                                new PaymentEvent(PaymentEventType.PAYMENT_CHARGE_SUCCEED, 
+                                                payment.getUserId(), payment.getOrderId(), null));
+                        paymentEventProducer.sendToOrder(
+                                new PaymentEvent(PaymentEventType.PAYMENT_CHARGE_SUCCEED,
+                                        payment.getUserId(), payment.getOrderId(), null));
+                    } else {
+                        payment.setStatus(PaymentStatus.FAILED);
+                        paymentRepository.save(payment);
+                        paymentEventProducer.sendToShipping(
+                                new PaymentEvent(PaymentEventType.PAYMENT_CHARGE_FAILED,
+                                        payment.getUserId(), payment.getOrderId(), null));
+                        paymentEventProducer.sendToOrder(
+                                new PaymentEvent(PaymentEventType.PAYMENT_CHARGE_FAILED,
+                                        payment.getUserId(), payment.getOrderId(), null));
                     }
                 });
 
-        //payment not found || payment failure
-        //kafka send payment failure
     }
 
     @Transactional
     public void initiateRefund(RefundRequestDTO refundRequest) {
         Payment payment = paymentRepository.findByTransactionKey(refundRequest.getTransactionKey())
-                .orElseThrow(() -> new RuntimeException("Payment record not found. "));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment record not found. "));
 
         if (payment.getStatus() == PaymentStatus.PAID) {
             payment.setRefundStatus(PaymentRefundStatus.REFUND_REQUESTED);
@@ -145,14 +155,17 @@ public class PaymentServiceImpl implements PaymentService {
                             && payment.getRefundStatus() == PaymentRefundStatus.REFUND_REQUESTED) {
                         payment.setRefundStatus(PaymentRefundStatus.REFUNDED);
                         payment.setRefundedAmount(refundRequest.getRequestRefundAmount());
-                        //kafka: send refund success
                         paymentRepository.save(payment);
-                        return;
+                        paymentEventProducer.sendToOrder(new PaymentEvent(PaymentEventType.PAYMENT_REFUNDED,
+                                payment.getUserId(), payment.getOrderId(), refundRequest.getRequestRefundAmount()));
+                    } else {
+                        payment.setRefundStatus(PaymentRefundStatus.NOT_REFUNDED);
+                        paymentRepository.save(payment);
+                        paymentEventProducer.sendToOrder(new PaymentEvent(PaymentEventType.PAYMENT_REFUND_DENIED,
+                                payment.getUserId(), payment.getOrderId(), null));
                     }
                 });
 
-        //payment not found || refund not approved
-        //kafka send refund failure
     }
 
     @Override

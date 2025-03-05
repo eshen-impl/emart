@@ -18,7 +18,7 @@ public interface PaymentClient {
     Map<String, String> initiatePayment(@RequestBody ValidatePaymentRequestDTO validatePaymentRequestDTO);
 
     @PutMapping("/cancel")
-    void cancelAuthorization(@RequestParam("orderId") UUID orderId);
+    void cancelAuthorization(@RequestParam("transactionKey") UUID transactionKey);
 
     @PutMapping("/refund")
     void initiateRefund(@RequestBody RefundRequestDTO refundRequest);
