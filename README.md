@@ -1,12 +1,13 @@
 ### Microservices Architecture
 ![emart arch drawio](https://github.com/user-attachments/assets/d1badc74-2e2e-4256-afd1-865255e06aed)
 
-
 ### Data Flow
 
 ![Emart data flow drawio](https://github.com/user-attachments/assets/8a9e1985-d0fa-45a3-bc7e-ec35ae8b6513)
 
+### User Flow
 
+![user flow drawio](https://github.com/user-attachments/assets/69f46740-035a-4c7a-ac22-0abd91419061)
 
 
 ### Order & Payment State Transition Flow
