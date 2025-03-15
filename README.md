@@ -7,7 +7,8 @@
 
 ### User Flow
 
-![user flow drawio](https://github.com/user-attachments/assets/69f46740-035a-4c7a-ac22-0abd91419061)
+![user flow drawio](https://github.com/user-attachments/assets/d0935031-30b7-472c-9449-48828fa66b6e)
+
 
 
 ### Order & Payment State Transition Flow
